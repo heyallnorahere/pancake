@@ -35,5 +35,11 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
+# no shared libs here please
+set(SDL_STATIC ON CACHE BOOL "Build static SDL" FORCE)
+set(SDL_SHARED OFF CACHE BOOL "Do not build shared SDL" FORCE)
+
+add_subdirectory("vendor/SDL")
 add_subdirectory("src/client")
+
 ament_package()

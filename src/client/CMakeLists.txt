@@ -17,4 +17,4 @@ set_target_properties(client PROPERTIES
 install(TARGETS client
   DESTINATION lib/${PROJECT_NAME})
 
-target_link_libraries(client ${CPP_TYPESUPPORT_TARGET})
+target_link_libraries(client ${CPP_TYPESUPPORT_TARGET} SDL3-static)

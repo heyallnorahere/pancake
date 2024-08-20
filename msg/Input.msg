@@ -1,6 +1,5 @@
-uint64 id
+uint8 id
 bool down
 bool up
 bool pressed
-float32 axis0
-float32 axis1
+float32[2] axes

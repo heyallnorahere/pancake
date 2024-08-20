@@ -3,27 +3,200 @@
 #include "pancake/client/client.h"
 
 #include <chrono>
+#include <unordered_map>
+#include <optional>
+#include <limits>
+
+#define SDL_MAIN_HANDLED
+#include <SDL3/SDL.h>
 
 using namespace std::chrono_literals;
 
 namespace pancake::client {
-    Client::Client() : Node("client") {
+    struct GamepadInputInfo {
+        std::optional<SDL_GamepadButton> AssociatedButton;
+        std::vector<SDL_GamepadAxis> AssociatedAxes;
+    };
+
+    static const std::unordered_map<GamepadInput, GamepadInputInfo> s_InputMapping = {
+        { GamepadInput::A, { SDL_GAMEPAD_BUTTON_SOUTH, {} } },
+        { GamepadInput::B, { SDL_GAMEPAD_BUTTON_EAST, {} } },
+        { GamepadInput::X, { SDL_GAMEPAD_BUTTON_WEST, {} } },
+        { GamepadInput::Y, { SDL_GAMEPAD_BUTTON_NORTH, {} } },
+        { GamepadInput::DPadUp, { SDL_GAMEPAD_BUTTON_DPAD_UP, {} } },
+        { GamepadInput::DPadDown, { SDL_GAMEPAD_BUTTON_DPAD_DOWN, {} } },
+        { GamepadInput::DPadRight, { SDL_GAMEPAD_BUTTON_DPAD_RIGHT, {} } },
+        { GamepadInput::DPadLeft, { SDL_GAMEPAD_BUTTON_DPAD_LEFT, {} } },
+        { GamepadInput::LeftStick,
+          { SDL_GAMEPAD_BUTTON_LEFT_STICK, { SDL_GAMEPAD_AXIS_LEFTX, SDL_GAMEPAD_AXIS_LEFTY } } },
+        { GamepadInput::RightStick,
+          { SDL_GAMEPAD_BUTTON_RIGHT_STICK,
+            { SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY } } },
+        { GamepadInput::LeftBumper, { SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, {} } },
+        { GamepadInput::RightBumper, { SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, {} } },
+        { GamepadInput::LeftTrigger, { {}, { SDL_GAMEPAD_AXIS_LEFT_TRIGGER } } },
+        { GamepadInput::RightTrigger, { {}, { SDL_GAMEPAD_AXIS_RIGHT_TRIGGER } } }
+    };
+
+    static std::optional<GamepadInput> FindButton(SDL_GamepadButton button) {
+        for (const auto& [id, info] : s_InputMapping) {
+            if (info.AssociatedButton == button) {
+                return id;
+            }
+        }
+
+        return {};
+    }
+
+    static std::optional<GamepadInput> FindAxis(SDL_GamepadAxis axis, size_t& index) {
+        for (const auto& [id, info] : s_InputMapping) {
+            for (size_t i = 0; i < info.AssociatedAxes.size(); i++) {
+                if (info.AssociatedAxes[i] == axis) {
+                    index = i;
+                    return id;
+                }
+            }
+        }
+
+        return {};
+    }
+
+    Client::Client()
+        : Node("client"), m_Window(nullptr), m_Gamepad(nullptr), m_SDLInitialized(false) {
         static constexpr uint32_t desiredFPS = 60;
         static constexpr std::chrono::duration<double> interval = 1s / desiredFPS;
 
-        // todo: create client window
+        SDL_SetHint("SDL_HINT_JOYSTICK_THREAD", "1");
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) != 0) {
+            RCLCPP_ERROR(get_logger(), "Failed to initialize SDL!");
+            return;
+        }
 
+        m_Window = SDL_CreateWindow("Pancake swerve client", 1600, 900, SDL_WINDOW_RESIZABLE);
+        m_SDLInitialized = true;
+
+        m_Publisher = create_publisher<pancake::msg::Input>("/control", 10);
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
     }
 
     Client::~Client() {
-        // todo: destroy client window
+        if (m_Window != nullptr) {
+            SDL_DestroyWindow(m_Window);
+        }
+
+        if (m_Gamepad != nullptr) {
+            SDL_CloseGamepad(m_Gamepad);
+        }
+
+        SDL_Quit();
     }
 
     void Client::Update() {
-        RCLCPP_INFO(get_logger(), "Update");
+        if (!SDL_HasGamepad()) {
+            RCLCPP_WARN(get_logger(), "No controller connected! Cannot control robot");
+        }
 
-        // todo: update
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+            case SDL_EVENT_QUIT:
+                rclcpp::shutdown();
+                break;
+            case SDL_EVENT_GAMEPAD_ADDED:
+                m_Gamepad = SDL_OpenGamepad(event.gdevice.which);
+                RCLCPP_INFO(get_logger(), "Connected controller: %s",
+                            SDL_GetGamepadName(m_Gamepad));
+
+                break;
+            case SDL_EVENT_GAMEPAD_REMOVED:
+                if (event.gdevice.which == SDL_GetGamepadID(m_Gamepad)) {
+                    SDL_CloseGamepad(m_Gamepad);
+                    m_Gamepad = nullptr;
+                }
+
+                break;
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            case SDL_EVENT_GAMEPAD_BUTTON_UP:
+                SendButton(event.gbutton);
+                break;
+            case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+                SendAxis(event.gaxis);
+                break;
+            }
+        }
+    }
+
+    void Client::SendButton(const SDL_GamepadButtonEvent& event) {
+        auto button = (SDL_GamepadButton)event.button;
+        auto gamepad = SDL_GetGamepadFromID(event.which);
+
+        const char* buttonName = SDL_GetGamepadStringForButton(button);
+        RCLCPP_INFO(get_logger(), "Button %s: %s", event.state == SDL_PRESSED ? "down" : "up",
+                    buttonName);
+
+        auto id = FindButton(button);
+        if (!id.has_value()) {
+            RCLCPP_WARN(get_logger(), "Could not find binding for button: %s", buttonName);
+
+            return;
+        }
+
+        pancake::msg::Input input;
+        input.id = (uint8_t)id.value();
+        input.down = event.state == SDL_PRESSED;
+        input.up = event.state == SDL_RELEASED;
+        input.pressed = SDL_GetGamepadButton(gamepad, button) != 0;
+
+        const auto& info = s_InputMapping.at(id.value());
+        for (size_t i = 0; i < info.AssociatedAxes.size(); i++) {
+            auto axis = info.AssociatedAxes[i];
+
+            int64_t value = SDL_GetGamepadAxis(gamepad, axis);
+            input.axes[i] = (float)value / std::numeric_limits<int16_t>::max();
+        }
+
+        m_Publisher->publish(input);
+    }
+
+    void Client::SendAxis(const SDL_GamepadAxisEvent& event) {
+        auto axis = (SDL_GamepadAxis)event.axis;
+        auto gamepad = SDL_GetGamepadFromID(event.which);
+
+        const char* axisName = SDL_GetGamepadStringForAxis(axis);
+        RCLCPP_INFO(get_logger(), "Axis %s: %f", axisName,
+                    (float)event.value / std::numeric_limits<int16_t>::max());
+
+        size_t index;
+        auto id = FindAxis(axis, index);
+        if (!id.has_value()) {
+            const char* axisName = SDL_GetGamepadStringForAxis(axis);
+            RCLCPP_WARN(get_logger(), "Could not get binding for axis: %s", axisName);
+
+            return;
+        }
+
+        pancake::msg::Input input;
+        input.id = (uint8_t)id.value();
+        input.down = input.up = false;
+
+        const auto& info = s_InputMapping.at(id.value());
+        input.pressed = info.AssociatedButton.has_value()
+                            ? SDL_GetGamepadButton(gamepad, info.AssociatedButton.value()) != 0
+                            : false;
+
+        for (size_t i = 0; i < info.AssociatedAxes.size(); i++) {
+            int64_t value;
+            if (i == index) {
+                value = event.value;
+            } else {
+                auto currentAxis = info.AssociatedAxes[i];
+                value = SDL_GetGamepadAxis(gamepad, currentAxis);
+            }
+
+            input.axes[i] = (float)value / std::numeric_limits<int16_t>::max();
+        }
+
+        m_Publisher->publish(input);
     }
 } // namespace pancake::client
