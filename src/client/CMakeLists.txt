@@ -12,7 +12,7 @@ target_include_directories(client PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 set_target_properties(client PROPERTIES
-    CXX_STANDARD 14)
+    CXX_STANDARD 20)
 
 install(TARGETS client
   DESTINATION lib/${PROJECT_NAME})
