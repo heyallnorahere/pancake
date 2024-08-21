@@ -35,7 +35,10 @@ namespace pancake::client {
         { GamepadInput::LeftBumper, { SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, {} } },
         { GamepadInput::RightBumper, { SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, {} } },
         { GamepadInput::LeftTrigger, { {}, { SDL_GAMEPAD_AXIS_LEFT_TRIGGER } } },
-        { GamepadInput::RightTrigger, { {}, { SDL_GAMEPAD_AXIS_RIGHT_TRIGGER } } }
+        { GamepadInput::RightTrigger, { {}, { SDL_GAMEPAD_AXIS_RIGHT_TRIGGER } } },
+        { GamepadInput::Start, { SDL_GAMEPAD_BUTTON_START, {} } },
+        { GamepadInput::Select, { SDL_GAMEPAD_BUTTON_GUIDE, {} } },
+        { GamepadInput::Touchpad, { SDL_GAMEPAD_BUTTON_TOUCHPAD, {} } }
     };
 
     static std::optional<GamepadInput> FindButton(SDL_GamepadButton button) {
@@ -61,8 +64,7 @@ namespace pancake::client {
         return {};
     }
 
-    Client::Client()
-        : Node("client"), m_Window(nullptr), m_Gamepad(nullptr), m_SDLInitialized(false) {
+    Client::Client() : Node("client"), m_Window(nullptr), m_SDLInitialized(false) {
         static constexpr uint32_t desiredFPS = 60;
         static constexpr std::chrono::duration<double> interval = 1s / desiredFPS;
 
@@ -85,8 +87,8 @@ namespace pancake::client {
             SDL_DestroyWindow(m_Window);
         }
 
-        if (m_Gamepad != nullptr) {
-            SDL_CloseGamepad(m_Gamepad);
+        for (auto [id, gamepad] : m_Gamepads) {
+            SDL_CloseGamepad(gamepad);
         }
 
         SDL_Quit();
@@ -104,16 +106,14 @@ namespace pancake::client {
                 rclcpp::shutdown();
                 break;
             case SDL_EVENT_GAMEPAD_ADDED:
-                m_Gamepad = SDL_OpenGamepad(event.gdevice.which);
+                m_Gamepads[(uint32_t)event.gdevice.which] = SDL_OpenGamepad(event.gdevice.which);
                 RCLCPP_INFO(get_logger(), "Connected controller: %s",
-                            SDL_GetGamepadName(m_Gamepad));
+                            SDL_GetGamepadNameForID(event.gdevice.which));
 
                 break;
             case SDL_EVENT_GAMEPAD_REMOVED:
-                if (event.gdevice.which == SDL_GetGamepadID(m_Gamepad)) {
-                    SDL_CloseGamepad(m_Gamepad);
-                    m_Gamepad = nullptr;
-                }
+                SDL_CloseGamepad(m_Gamepads[(uint32_t)event.gdevice.which]);
+                m_Gamepads.erase((uint32_t)event.gdevice.which);
 
                 break;
             case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
@@ -132,8 +132,10 @@ namespace pancake::client {
         auto gamepad = SDL_GetGamepadFromID(event.which);
 
         const char* buttonName = SDL_GetGamepadStringForButton(button);
-        RCLCPP_INFO(get_logger(), "Button %s: %s", event.state == SDL_PRESSED ? "down" : "up",
-                    buttonName);
+        const char* gamepadName = SDL_GetGamepadName(gamepad);
+
+        RCLCPP_INFO(get_logger(), "%s sent button %s: %s", gamepadName,
+                    event.state == SDL_PRESSED ? "down" : "up", buttonName);
 
         auto id = FindButton(button);
         if (!id.has_value()) {

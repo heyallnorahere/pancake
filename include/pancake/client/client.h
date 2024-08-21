@@ -3,6 +3,8 @@
 
 #include "pancake/msg/input.hpp"
 
+#include <unordered_map>
+
 // no SDL header in client.h
 struct SDL_Window;
 struct SDL_GamepadButtonEvent;
@@ -26,7 +28,8 @@ namespace pancake::client {
         LeftTrigger,
         RightTrigger,
         Start,
-        Select
+        Select,
+        Touchpad
     };
 
     class Client : public rclcpp::Node {
@@ -41,7 +44,7 @@ namespace pancake::client {
         void SendAxis(const SDL_GamepadAxisEvent& event);
 
         SDL_Window* m_Window;
-        SDL_Gamepad* m_Gamepad;
+        std::unordered_map<uint32_t, SDL_Gamepad*> m_Gamepads;
         bool m_SDLInitialized;
 
         rclcpp::TimerBase::SharedPtr m_Timer;

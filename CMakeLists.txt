@@ -38,8 +38,9 @@ install(DIRECTORY
 # no shared libs here please
 set(SDL_STATIC ON CACHE BOOL "Build static SDL" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "Do not build shared SDL" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Just don't build ANY shared libraries" FORCE)
 
-add_subdirectory("vendor/SDL")
-add_subdirectory("src/client")
+add_subdirectory("vendor")
+add_subdirectory("src")
 
 ament_package()
