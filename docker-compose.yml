@@ -1,0 +1,6 @@
+services:
+  robot:
+    image: ghcr.io/heyallnorahere/pancake-swerve:latest
+    build: .
+    restart: unless-stopped
+    network_mode: host

@@ -40,6 +40,8 @@ set(SDL_STATIC ON CACHE BOOL "Build static SDL" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "Do not build shared SDL" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Just don't build ANY shared libraries" FORCE)
 
+option(BUILD_CLIENT "Should we build the robot client?" ON)
+
 add_subdirectory("vendor")
 add_subdirectory("src")
 
