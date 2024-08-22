@@ -1,6 +1,7 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 
+#include "pancake/vector2.h"
 #include "pancake/swerve/swerve_module.h"
 #include "pancake/swerve/pid_controller.h"
 #include "pancake/msg/chassis_speeds.hpp"
@@ -9,10 +10,6 @@
 #include <chrono>
 
 namespace pancake::swerve {
-    struct Vector2 {
-        float X, Y;
-    };
-
     struct SwerveModuleMeta {
         std::shared_ptr<SwerveModule> Module;
         Vector2 CenterOffset;
@@ -20,7 +17,7 @@ namespace pancake::swerve {
 
     struct ChassisSpeeds {
         Vector2 Linear; // m/s
-        float Angular; // rad/s
+        float Angular;  // rad/s
     };
 
     class Swerve : public rclcpp::Node {

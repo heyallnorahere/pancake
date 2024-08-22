@@ -33,7 +33,9 @@ namespace pancake::swerve {
                     std::sqrt(input.x * input.x + input.y * input.y));
         RCLCPP_INFO(get_logger(), "\tLinear velocity angle: %f degrees",
                     std::atan2(input.y, input.x) * 180.f / std::numbers::pi_v<float>);
-        RCLCPP_INFO(get_logger(), "\tAngular velocity: %s rad/s", input.angular_velocity);
+        RCLCPP_INFO(get_logger(), "\tAngular velocity: %f rad/s", input.angular_velocity);
+
+        m_ChassisSpeeds = input;
     }
 
     void Swerve::Update() {
@@ -41,11 +43,33 @@ namespace pancake::swerve {
         auto delta = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_LastUpdate);
         m_LastUpdate = now;
 
+        Vector2 chassisVelocity;
+        chassisVelocity.X = m_ChassisSpeeds.x;
+        chassisVelocity.Y = m_ChassisSpeeds.y;
+
         for (const auto& meta : m_Modules) {
+            float rotationalOffset = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
+            float distanceToCenter = meta.CenterOffset.Length();
+
+            float angularRotationVelocity = m_ChassisSpeeds.angular_velocity * distanceToCenter;
+            float moduleRotation = m_ChassisRotation + rotationalOffset;
+
+            static const float piOver2 = std::numbers::pi_v<float> / 2.f;
+            Vector2 perpendicular = meta.CenterOffset.Rotate(piOver2).Normalize();
+
+            // we want this rotated INVERSELY by the chassis rotation
+            Vector2 linear = chassisVelocity.Rotate(-moduleRotation);
+            Vector2 angular = angularRotationVelocity * perpendicular;
+            Vector2 velocity = linear + angular;
+
+            ModuleState target;
+            target.WheelAngle = std::atan2(velocity.Y, velocity.X);
+            target.WheelAngularVelocity = velocity.Length();
+
+            meta.Module->SetTarget(target);
             meta.Module->Update();
 
             const auto& state = meta.Module->GetState();
-            float rotationalOffset = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
             float wheelAngle = rotationalOffset + state.WheelAngle;
             float wheelAngularVelocity = state.WheelAngularVelocity;
             float moduleVelocityLength = wheelAngularVelocity * m_WheelRadius;
@@ -54,14 +78,8 @@ namespace pancake::swerve {
             moduleVelocity.X = moduleVelocityLength * std::cos(wheelAngle);
             moduleVelocity.Y = moduleVelocityLength * std::sin(wheelAngle);
 
-            Vector2 perpendicularToCenter;
-            perpendicularToCenter.X = -meta.CenterOffset.Y;
-            perpendicularToCenter.Y = meta.CenterOffset.X;
-
-            float dot = moduleVelocity.X * perpendicularToCenter.X +
-                        moduleVelocity.Y * perpendicularToCenter.Y;
-
-            m_ChassisRotation += dot / m_Modules.size();
+            float dot = moduleVelocity.X * perpendicular.X + moduleVelocity.Y * perpendicular.Y;
+            m_ChassisRotation += dot * distanceToCenter / m_Modules.size();
         }
     }
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <optional>
+#include <type_traits>
 
 namespace pancake::swerve {
     template <typename T>
@@ -16,8 +17,13 @@ namespace pancake::swerve {
         T Derivative;
     };
 
-    template <typename T>
+    template <typename T, class Enabled = void>
     class PIDController {
+        // nothing
+    };
+
+    template <typename T>
+    class PIDController<T, std::enable_if_t<std::is_floating_point_v<T>>> {
     public:
         PIDController(const PID<T>& pid) : m_PID(pid) {}
 
@@ -32,18 +38,23 @@ namespace pancake::swerve {
         inline T GetSetpoint() const { return m_Setpoint; }
 
         inline T Evaluate(T measurement) {
-            float delta = 0.f;
+            T delta = (T)0;
 
             auto timestamp = std::chrono::high_resolution_clock::now();
             if (m_LastSample.has_value()) {
-                delta = std::chrono::duration_cast<std::chrono::duration<float>>(timestamp -
-                                                                                 m_Timestamp)
-                            .count();
+                delta =
+                    std::chrono::duration_cast<std::chrono::duration<T>>(timestamp - m_Timestamp)
+                        .count();
             }
 
-            float error = m_Setpoint - measurement;
-            float integral = error * delta;
-            float derivative = (measurement - m_LastSample.value_or(0.f)) / delta;
+            T error = m_Setpoint - measurement;
+            T integral = error * delta;
+            T derivative = (T)0;
+
+            if (m_LastSample.has_value()) {
+                T lastError = m_Setpoint - m_LastSample.value();
+                derivative = (error - lastError) / delta;
+            }
 
             m_Timestamp = timestamp;
             m_LastSample = measurement;

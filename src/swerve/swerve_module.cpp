@@ -9,7 +9,6 @@ namespace pancake::swerve {
     }
 
     void SwerveModule::Update() {
-
         float rotationMotorVelocity = /* placeholder */ 0.f;
         float wheelWellVelocity = -rotationMotorVelocity * m_Rotation.GearRatio;
 
@@ -29,8 +28,5 @@ namespace pancake::swerve {
         m_State.WheelAngle = -rotationMotorPosition * m_Drive.GearRatio;
     }
 
-    void SwerveModule::SetTarget(const ModuleState& target) {
-        m_Target = target;
-        Update();
-    }
+    void SwerveModule::SetTarget(const ModuleState& target) { m_Target = target; }
 }; // namespace pancake::swerve
