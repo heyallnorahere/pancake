@@ -13,8 +13,8 @@ namespace pancake::swerve {
     };
 
     struct ModuleState {
-        float TargetWheelAngle;
-        float TargetWheelAngularVelocity;
+        float WheelAngle;
+        float WheelAngularVelocity;
     };
 
     class SwerveModule {
@@ -22,10 +22,13 @@ namespace pancake::swerve {
         SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation);
 
         void Update();
-        void SetState(const ModuleState& state);
+        void SetTarget(const ModuleState& target);
+
+        const ModuleState& GetState() const { return m_State; }
+        const ModuleState& GetTarget() const { return m_Target; }
 
     private:
-        ModuleState m_State;
+        ModuleState m_State, m_Target;
 
         SwerveMotor m_Drive, m_Rotation;
         PIDController<float> m_DriveController, m_RotationController;

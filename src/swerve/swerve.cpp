@@ -1,12 +1,19 @@
 #include "pancake/swerve/swerve.h"
 
+using namespace std::chrono_literals;
+
 namespace pancake::swerve {
-    Swerve::Swerve() : Node("swerve") {
+    static float Dot(const Vector2& a, const Vector2& b) { return a.X * b.X + a.Y * b.Y; }
+
+    Swerve::Swerve() : Node("swerve"), m_ChassisRotation(0.f) {
+        AddModules();
+
         m_Subscriber = create_subscription<pancake::msg::Input>(
             "/pancake/swerve/control", 10,
             std::bind(&Swerve::InputReceived, this, std::placeholders::_1));
 
-        AddModules();
+        m_LastUpdate = std::chrono::high_resolution_clock::now();
+        m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
     }
 
     Swerve::~Swerve() {
@@ -23,8 +30,28 @@ namespace pancake::swerve {
     }
 
     void Swerve::Update() {
+        auto now = std::chrono::high_resolution_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_LastUpdate);
+        m_LastUpdate = now;
+
         for (const auto& meta : m_Modules) {
             meta.Module->Update();
+
+            const auto& state = meta.Module->GetState();
+            float rotationalOffset = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
+            float wheelAngle = rotationalOffset + state.WheelAngle;
+            float wheelAngularVelocity = state.WheelAngularVelocity;
+            float moduleVelocityLength = wheelAngularVelocity * m_WheelRadius;
+
+            Vector2 moduleVelocity;
+            moduleVelocity.X = moduleVelocityLength * std::cos(wheelAngle);
+            moduleVelocity.Y = moduleVelocityLength * std::sin(wheelAngle);
+
+            Vector2 perpendicularToCenter;
+            perpendicularToCenter.X = -meta.CenterOffset.Y;
+            perpendicularToCenter.Y = meta.CenterOffset.X;
+
+            m_ChassisRotation += Dot(moduleVelocity, perpendicularToCenter) / m_Modules.size();
         }
     }
 
@@ -42,11 +69,12 @@ namespace pancake::swerve {
         // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/4001f8a0b9bee7a60796b187/e/a1fbf0c2138da401bd4bce14?renderMode=0&uiState=66c665ab45ca2447cfe6c702
         m_DriveGearRatio = 0.4f;
         m_RotationGearRatio = 3.f;
+        m_WheelRadius = 1.5f * 0.0254f;
 
-        AddModule(0, 1, 0.f);
+        AddModule(0, 1, { 0.f, 0.f });
     }
 
-    void Swerve::AddModule(uint8_t driveID, uint8_t rotationID, float rotationalOffset) {
+    void Swerve::AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset) {
         static const std::string network = "can0";
 
         SwerveMotor driveMotor;
@@ -61,7 +89,7 @@ namespace pancake::swerve {
 
         SwerveModuleMeta meta;
         meta.Module = std::make_shared<SwerveModule>(driveMotor, rotationMotor);
-        meta.RotationalOffset = rotationalOffset;
+        meta.CenterOffset = centerOffset;
 
         m_Modules.push_back(meta);
     }
