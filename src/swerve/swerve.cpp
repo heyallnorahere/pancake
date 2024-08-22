@@ -17,6 +17,9 @@ namespace pancake::swerve {
             "/pancake/swerve/speed", 10,
             std::bind(&Swerve::SetSpeeds, this, std::placeholders::_1));
 
+        m_RotationPublisher =
+            create_publisher<std_msgs::msg::Float32>("/pancake/swerve/rotation", 10);
+
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
     }
@@ -81,6 +84,10 @@ namespace pancake::swerve {
             float dot = moduleVelocity.X * perpendicular.X + moduleVelocity.Y * perpendicular.Y;
             m_ChassisRotation += dot * distanceToCenter / m_Modules.size();
         }
+
+        std_msgs::msg::Float32 rotation;
+        rotation.data = m_ChassisRotation;
+        m_RotationPublisher->publish(rotation);
     }
 
     void Swerve::AddModules() {

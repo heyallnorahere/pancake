@@ -1,3 +1,4 @@
 <launch>
+    <node pkg="pancake" exec="robot" name="robot" />
     <node pkg="pancake" exec="swerve" name="swerve" />
 </launch>

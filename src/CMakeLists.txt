@@ -5,5 +5,6 @@ if(${BUILD_CLIENT})
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+    add_subdirectory("robot")
     add_subdirectory("swerve")
 endif()

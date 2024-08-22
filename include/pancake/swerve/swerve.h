@@ -1,5 +1,6 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 #include "pancake/vector2.h"
 #include "pancake/swerve/swerve_module.h"
@@ -42,6 +43,7 @@ namespace pancake::swerve {
         float m_ChassisRotation;
 
         rclcpp::Subscription<pancake::msg::ChassisSpeeds>::SharedPtr m_Subscriber;
+        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_RotationPublisher;
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::chrono::high_resolution_clock::time_point m_LastUpdate;

@@ -77,7 +77,7 @@ namespace pancake::client {
         m_Window = SDL_CreateWindow("Pancake swerve client", 1600, 900, SDL_WINDOW_RESIZABLE);
         m_SDLInitialized = true;
 
-        m_Publisher = create_publisher<pancake::msg::Input>("/pancake/swerve/control", 10);
+        m_Publisher = create_publisher<pancake::msg::Input>("/pancake/client/control", 10);
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
     }
