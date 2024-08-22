@@ -1,9 +1,9 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 
-#include "pancake/msg/input.hpp"
 #include "pancake/swerve/swerve_module.h"
 #include "pancake/swerve/pid_controller.h"
+#include "pancake/msg/chassis_speeds.hpp"
 
 #include <memory>
 #include <chrono>
@@ -18,14 +18,19 @@ namespace pancake::swerve {
         Vector2 CenterOffset;
     };
 
+    struct ChassisSpeeds {
+        Vector2 Linear; // m/s
+        float Angular; // rad/s
+    };
+
     class Swerve : public rclcpp::Node {
     public:
         Swerve();
         ~Swerve();
 
-    private:
-        void InputReceived(const pancake::msg::Input& input);
+        void SetSpeeds(const pancake::msg::ChassisSpeeds& speeds);
 
+    private:
         void Update();
 
         void AddModules();
@@ -35,9 +40,11 @@ namespace pancake::swerve {
         PID<float> m_DrivePID, m_RotationPID;
         float m_DriveGearRatio, m_RotationGearRatio;
         float m_WheelRadius;
+
+        pancake::msg::ChassisSpeeds m_ChassisSpeeds;
         float m_ChassisRotation;
 
-        rclcpp::Subscription<pancake::msg::Input>::SharedPtr m_Subscriber;
+        rclcpp::Subscription<pancake::msg::ChassisSpeeds>::SharedPtr m_Subscriber;
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::chrono::high_resolution_clock::time_point m_LastUpdate;
