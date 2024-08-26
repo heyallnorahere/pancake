@@ -54,6 +54,7 @@ namespace pancake::swerve {
             float rotationalOffset = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
             float distanceToCenter = meta.CenterOffset.Length();
 
+            // radians/s * m = m/s around arc
             float angularRotationVelocity = m_ChassisSpeeds.angular_velocity * distanceToCenter;
             float moduleRotation = m_ChassisRotation + rotationalOffset;
 
@@ -81,7 +82,7 @@ namespace pancake::swerve {
             moduleVelocity.X = moduleVelocityLength * std::cos(wheelAngle);
             moduleVelocity.Y = moduleVelocityLength * std::sin(wheelAngle);
 
-            float dot = moduleVelocity.X * perpendicular.X + moduleVelocity.Y * perpendicular.Y;
+            float dot = moduleVelocity.Dot(perpendicular);
             m_ChassisRotation += dot * distanceToCenter / m_Modules.size();
         }
 
@@ -104,9 +105,10 @@ namespace pancake::swerve {
         // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/4001f8a0b9bee7a60796b187/e/a1fbf0c2138da401bd4bce14?renderMode=0&uiState=66c665ab45ca2447cfe6c702
         m_DriveGearRatio = 2.f / 5.f;
         m_RotationGearRatio = 1.f / 48.f;
-        m_WheelRadius = 1.5f * 0.0254f;
+        m_WheelRadius = 1.5f * 0.0254f; // in meters
 
-        AddModule(0, 1, { 0.f, 0.f });
+        float angle = std::numbers::pi_v<float> * 1.75f;
+        AddModule(0, 1, { std::cos(angle), std::sin(angle) });
     }
 
     void Swerve::AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset) {

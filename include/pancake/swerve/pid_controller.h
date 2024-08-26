@@ -1,73 +1,138 @@
 #pragma once
+
 #include <vector>
 #include <chrono>
 #include <optional>
 #include <type_traits>
+#include <tuple>
+#include <stdexcept>
+#include <algorithm>
 
 namespace pancake::swerve {
-    template <typename T>
+    template <typename _Ty>
     struct PID {
         // Proportional coefficient (in seconds)
-        T Proportional;
+        _Ty Proportional;
 
         // Integral coefficient (proportional)
-        T Integral;
+        _Ty Integral;
 
         // Derivative (in s^2 units)
-        T Derivative;
+        _Ty Derivative;
     };
 
-    template <typename T, class Enabled = void>
+    template <typename _Ty, class Enabled = void>
     class PIDController {
         // nothing
     };
 
-    template <typename T>
-    class PIDController<T, std::enable_if_t<std::is_floating_point_v<T>>> {
+    enum class IntegrationType { RightRiemann, LeftRiemann };
+
+    template <typename _Ty>
+    class PIDController<_Ty, std::enable_if_t<std::is_floating_point_v<_Ty>>> {
     public:
-        PIDController(const PID<T>& pid) : m_PID(pid) {}
+        PIDController(const PID<_Ty>& pid)
+            : m_PID(pid), m_Setpoint((_Ty)0), m_IntegralBound({ (_Ty)-1, (_Ty)1 }),
+              m_MaxSamples(10) {}
 
-        inline PID<T>& GetPID() { return m_PID; }
-        inline const PID<T>& GetPID() const { return m_PID; }
+        ~PIDController() = default;
 
-        inline void SetSetpoint(T setpoint) {
-            m_Setpoint = setpoint;
-            m_LastSample.reset();
+        PIDController(const PIDController<_Ty>& other) = delete;
+        PIDController& operator=(const PIDController<_Ty>& other) = delete;
+
+        inline PID<_Ty>& GetPID() { return m_PID; }
+        inline const PID<_Ty>& GetPID() const { return m_PID; }
+
+        inline void SetMaxSamples(size_t maxSamples) {
+            m_MaxSamples = maxSamples;
+            ValidateSampleCount();
         }
 
-        inline T GetSetpoint() const { return m_Setpoint; }
+        inline void SetIntegralBound(const std::tuple<_Ty, _Ty>& bound) {
+            _Ty min = std::get<0>(bound);
+            _Ty max = std::get<1>(bound);
 
-        inline T Evaluate(T measurement) {
-            T delta = (T)0;
-
-            auto timestamp = std::chrono::high_resolution_clock::now();
-            if (m_LastSample.has_value()) {
-                delta =
-                    std::chrono::duration_cast<std::chrono::duration<T>>(timestamp - m_Timestamp)
-                        .count();
+            if (min > max) {
+                throw std::out_of_range("Integral bound is not valid (min is greater than max)");
             }
 
-            T error = m_Setpoint - measurement;
-            T integral = error * delta;
-            T derivative = (T)0;
+            m_IntegralBound = bound;
+        }
 
-            if (m_LastSample.has_value()) {
-                T lastError = m_Setpoint - m_LastSample.value();
-                derivative = (error - lastError) / delta;
+        inline void SetSetpoint(_Ty setpoint) { m_Setpoint = setpoint; }
+        inline _Ty GetSetpoint() const { return m_Setpoint; }
+
+        inline _Ty Evaluate(_Ty measurement,
+                            IntegrationType integration = IntegrationType::RightRiemann) {
+            Sample sample;
+            sample.Value = measurement;
+            sample.Timestamp = std::chrono::high_resolution_clock::now();
+
+            size_t intervalCount = m_Samples.size();
+            m_Samples.push_back(sample);
+
+            _Ty error = m_Setpoint - measurement;
+            _Ty integral = (_Ty)0;
+            _Ty derivative = (_Ty)0;
+
+            for (size_t i = 0; i < intervalCount; i++) {
+                const auto& lastSample = m_Samples[i];
+                const auto& currentSample = m_Samples[i + 1];
+
+                _Ty lastError = m_Setpoint - lastSample.Value;
+                _Ty currentError = m_Setpoint - currentSample.Value;
+                auto delta = std::chrono::duration_cast<std::chrono::duration<_Ty>>(
+                    currentSample.Timestamp - lastSample.Timestamp);
+
+                switch (integration) {
+                case IntegrationType::RightRiemann:
+                    integral += currentError * delta.count();
+                    break;
+                case IntegrationType::LeftRiemann:
+                    integral += lastError * delta.count();
+                    break;
+                default:
+                    // idk
+                    break;
+                }
+
+                _Ty min = std::get<0>(m_IntegralBound) / m_PID.Integral;
+                _Ty max = std::get<1>(m_IntegralBound) / m_PID.Integral;
+                integral = std::clamp(integral, min, max);
+
+                if (i == intervalCount - 1) {
+                    derivative += (currentError - lastError) / delta.count();
+                }
             }
 
-            m_Timestamp = timestamp;
-            m_LastSample = measurement;
-
+            ValidateSampleCount();
             return m_PID.Proportional * error + m_PID.Integral * integral +
                    m_PID.Derivative * derivative;
         }
 
     private:
-        PID<T> m_PID;
-        T m_Setpoint;
+        inline void ValidateSampleCount() {
+            if (m_Samples.size() <= m_MaxSamples) {
+                return;
+            }
 
-        std::chrono::high_resolution_clock::time_point m_Timestamp;
-        std::optional<T> m_LastSample;
+            auto begin = m_Samples.begin();
+            auto end = begin;
+            std::advance(end, m_Samples.size() - m_MaxSamples);
+
+            m_Samples.erase(begin, end);
+        }
+
+        struct Sample {
+            _Ty Value;
+            std::chrono::high_resolution_clock::time_point Timestamp;
+        };
+
+        PID<_Ty> m_PID;
+        _Ty m_Setpoint;
+        std::tuple<_Ty, _Ty> m_IntegralBound;
+
+        std::vector<Sample> m_Samples;
+        size_t m_MaxSamples;
     };
 }; // namespace pancake::swerve

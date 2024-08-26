@@ -11,6 +11,8 @@ namespace pancake {
 
         inline float Length2() const { return X * X + Y * Y; }
         inline float Length() const { return std::sqrt(Length2()); }
+        
+        inline float Dot(const Vector2& other) const { return X * other.X + Y * other.Y; }
 
         Vector2 Normalize() const;
 
