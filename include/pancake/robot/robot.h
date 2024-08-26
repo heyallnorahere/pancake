@@ -2,16 +2,10 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "pancake/msg/input.hpp"
-#include "pancake/msg/chassis_speeds.hpp"
+#include "pancake/msg/swerve_request.hpp"
 #include "pancake/client/client.h"
 
 namespace pancake::robot {
-    struct InputState {
-        bool Pressed;
-        bool Up, Down;
-        std::array<float, 2> Axes;
-    };
-
     class Robot : public rclcpp::Node {
     public:
         static bool IsInputDown(pancake::client::GamepadInput input);
@@ -27,7 +21,7 @@ namespace pancake::robot {
         void Update();
         void UpdateInput();
 
-        rclcpp::Publisher<pancake::msg::ChassisSpeeds>::SharedPtr m_SpeedPublisher;
+        rclcpp::Publisher<pancake::msg::SwerveRequest>::SharedPtr m_RequestPublisher;
         rclcpp::Subscription<pancake::msg::Input>::SharedPtr m_InputSubscriber;
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
     };

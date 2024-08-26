@@ -5,7 +5,8 @@
 #include "pancake/vector2.h"
 #include "pancake/swerve/swerve_module.h"
 #include "pancake/swerve/pid_controller.h"
-#include "pancake/msg/chassis_speeds.hpp"
+#include "pancake/msg/swerve_request.hpp"
+#include "pancake/msg/odometry_state.hpp"
 
 #include <memory>
 #include <chrono>
@@ -16,21 +17,17 @@ namespace pancake::swerve {
         Vector2 CenterOffset;
     };
 
-    struct ChassisSpeeds {
-        Vector2 Linear; // m/s
-        float Angular;  // rad/s
-    };
-
     class Swerve : public rclcpp::Node {
     public:
         Swerve();
         ~Swerve();
 
-        void SetSpeeds(const pancake::msg::ChassisSpeeds& speeds);
+        void SetRequest(const pancake::msg::SwerveRequest& request);
+        void ResetOdometry(const std::optional<pancake::msg::OdometryState>& state = {});
 
-    private:
         void Update();
 
+    private:
         void AddModules();
         void AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset);
 
@@ -39,11 +36,12 @@ namespace pancake::swerve {
         float m_DriveGearRatio, m_RotationGearRatio;
         float m_WheelRadius;
 
-        pancake::msg::ChassisSpeeds m_ChassisSpeeds;
-        float m_ChassisRotation;
+        pancake::msg::SwerveRequest m_Request;
+        pancake::msg::OdometryState m_Odometry;
 
-        rclcpp::Subscription<pancake::msg::ChassisSpeeds>::SharedPtr m_Subscriber;
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_RotationPublisher;
+        rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
+        rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;
+        rclcpp::Publisher<pancake::msg::OdometryState>::SharedPtr m_OdometryPublisher;
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::chrono::high_resolution_clock::time_point m_LastUpdate;

@@ -8,17 +8,16 @@ namespace pancake::swerve {
     Swerve::Swerve() : Node("swerve") {
         AddModules();
 
-        m_ChassisSpeeds.x = 0.f;
-        m_ChassisSpeeds.y = 0.f;
-        m_ChassisSpeeds.angular_velocity = 0.f;
-        m_ChassisRotation = 0.f;
+        m_RequestSubscriber = create_subscription<pancake::msg::SwerveRequest>(
+            "/pancake/swerve/request", 10,
+            std::bind(&Swerve::SetRequest, this, std::placeholders::_1));
 
-        m_Subscriber = create_subscription<pancake::msg::ChassisSpeeds>(
-            "/pancake/swerve/speed", 10,
-            std::bind(&Swerve::SetSpeeds, this, std::placeholders::_1));
+        m_OdometryPublisher =
+            create_publisher<pancake::msg::OdometryState>("/pancake/odometry/state", 10);
 
-        m_RotationPublisher =
-            create_publisher<std_msgs::msg::Float32>("/pancake/swerve/rotation", 10);
+        m_ResetSubscriber = create_subscription<pancake::msg::OdometryState>(
+            "/pancake/odometry/reset", 10,
+            std::bind(&Swerve::ResetOdometry, this, std::placeholders::_1));
 
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
@@ -28,41 +27,58 @@ namespace pancake::swerve {
         // todo: shut down swerve stuff
     }
 
-    void Swerve::SetSpeeds(const pancake::msg::ChassisSpeeds& input) {
-        RCLCPP_INFO(get_logger(), "Setting speeds:");
-        RCLCPP_INFO(get_logger(), "\tX velocity: %f m/s", input.x);
-        RCLCPP_INFO(get_logger(), "\tY velocity: %f m/s", input.y);
-        RCLCPP_INFO(get_logger(), "\tLinear velocity: %f m/s",
-                    std::sqrt(input.x * input.x + input.y * input.y));
-        RCLCPP_INFO(get_logger(), "\tLinear velocity angle: %f degrees",
-                    std::atan2(input.y, input.x) * 180.f / std::numbers::pi_v<float>);
-        RCLCPP_INFO(get_logger(), "\tAngular velocity: %f rad/s", input.angular_velocity);
+    void Swerve::SetRequest(const pancake::msg::SwerveRequest& request) {
+        Vector2 linear;
+        linear.X = request.velocity.x;
+        linear.Y = request.velocity.y;
 
-        m_ChassisSpeeds = input;
+        RCLCPP_INFO(get_logger(), "Setting request:");
+        RCLCPP_INFO(get_logger(), "\tRequest type: %s", request.absolute ? "Absolute" : "Relative");
+        RCLCPP_INFO(get_logger(), "\tX velocity: %f m/s", linear.X);
+        RCLCPP_INFO(get_logger(), "\tY velocity: %f m/s", linear.Y);
+        RCLCPP_INFO(get_logger(), "\tLinear velocity: %f m/s", linear.Length());
+        RCLCPP_INFO(get_logger(), "\tLinear velocity angle: %f degrees",
+                    std::atan2(linear.Y, linear.X) * 180.f / std::numbers::pi_v<float>);
+        RCLCPP_INFO(get_logger(), "\tAngular velocity: %f rad/s",
+                    request.velocity.angular_velocity);
+
+        m_Request = request;
+    }
+
+    void Swerve::ResetOdometry(const std::optional<pancake::msg::OdometryState>& state) {
+        m_Odometry = state.value_or(pancake::msg::OdometryState());
     }
 
     void Swerve::Update() {
         auto now = std::chrono::high_resolution_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_LastUpdate);
+        auto delta = std::chrono::duration_cast<std::chrono::duration<float>>(now - m_LastUpdate);
         m_LastUpdate = now;
 
-        Vector2 chassisVelocity;
-        chassisVelocity.X = m_ChassisSpeeds.x;
-        chassisVelocity.Y = m_ChassisSpeeds.y;
+        Vector2 requestedLinearVelocity;
+        requestedLinearVelocity.X = m_Request.velocity.x;
+        requestedLinearVelocity.Y = m_Request.velocity.y;
+
+        m_Odometry.velocity.x = 0.f;
+        m_Odometry.velocity.y = 0.f;
+        m_Odometry.velocity.angular_velocity = 0.f;
 
         for (const auto& meta : m_Modules) {
             float rotationalOffset = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
             float distanceToCenter = meta.CenterOffset.Length();
 
             // radians/s * m = m/s around arc
-            float angularRotationVelocity = m_ChassisSpeeds.angular_velocity * distanceToCenter;
-            float moduleRotation = m_ChassisRotation + rotationalOffset;
+            float angularRotationVelocity = m_Request.velocity.angular_velocity * distanceToCenter;
+            float moduleRotation = rotationalOffset;
+
+            if (m_Request.absolute) {
+                moduleRotation += m_Odometry.transform.rotation;
+            }
 
             static const float piOver2 = std::numbers::pi_v<float> / 2.f;
             Vector2 perpendicular = meta.CenterOffset.Rotate(piOver2).Normalize();
 
             // we want this rotated INVERSELY by the chassis rotation
-            Vector2 linear = chassisVelocity.Rotate(-moduleRotation);
+            Vector2 linear = requestedLinearVelocity.Rotate(-moduleRotation);
             Vector2 angular = angularRotationVelocity * perpendicular;
             Vector2 velocity = linear + angular;
 
@@ -82,13 +98,19 @@ namespace pancake::swerve {
             moduleVelocity.X = moduleVelocityLength * std::cos(wheelAngle);
             moduleVelocity.Y = moduleVelocityLength * std::sin(wheelAngle);
 
-            float dot = moduleVelocity.Dot(perpendicular);
-            m_ChassisRotation += dot * distanceToCenter / m_Modules.size();
+            auto absoluteModuleVelocity = moduleVelocity.Rotate(m_Odometry.transform.rotation);
+            float velocityDot = moduleVelocity.Dot(perpendicular);
+
+            m_Odometry.velocity.x += absoluteModuleVelocity.X / m_Modules.size();
+            m_Odometry.velocity.y += absoluteModuleVelocity.Y / m_Modules.size();
+            m_Odometry.velocity.angular_velocity +=
+                velocityDot * distanceToCenter / m_Modules.size();
         }
 
-        std_msgs::msg::Float32 rotation;
-        rotation.data = m_ChassisRotation;
-        m_RotationPublisher->publish(rotation);
+        m_Odometry.transform.x += m_Odometry.velocity.x * delta.count();
+        m_Odometry.transform.y += m_Odometry.velocity.y * delta.count();
+        m_Odometry.transform.rotation += m_Odometry.velocity.angular_velocity * delta.count();
+        m_OdometryPublisher->publish(m_Odometry);
     }
 
     void Swerve::AddModules() {

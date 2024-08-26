@@ -8,9 +8,15 @@
 using namespace std::chrono_literals;
 
 namespace pancake::robot {
+    struct InputState {
+        bool Pressed;
+        bool Up, Down;
+        std::array<float, 2> Axes;
+    };
+
     static std::unordered_map<pancake::client::GamepadInput, InputState> s_Gamepad;
 
-    static const float s_LinearControlVelocity = 10.f; // m/s
+    static const float s_LinearControlVelocity = 10.f;                             // m/s
     static const float s_AngularControlVelocity = std::numbers::pi_v<float> * 2.f; // rad/s
 
     bool Robot::IsInputDown(pancake::client::GamepadInput input) {
@@ -46,8 +52,8 @@ namespace pancake::robot {
     }
 
     Robot::Robot() : Node("robot") {
-        m_SpeedPublisher =
-            create_publisher<pancake::msg::ChassisSpeeds>("/pancake/swerve/speed", 10);
+        m_RequestPublisher =
+            create_publisher<pancake::msg::SwerveRequest>("/pancake/swerve/request", 10);
 
         m_InputSubscriber = create_subscription<pancake::msg::Input>(
             "/pancake/client/control", 10,
@@ -84,14 +90,15 @@ namespace pancake::robot {
             angularDirection = 0.f;
         }
 
-        Vector2 linear = direction * s_LinearControlVelocity;
+        Vector2 linear = direction.Normalize() * s_LinearControlVelocity;
         float angular = angularDirection * s_AngularControlVelocity;
 
-        pancake::msg::ChassisSpeeds speeds;
-        speeds.x = linear.X;
-        speeds.y = linear.Y;
-        speeds.angular_velocity = angular;
-        m_SpeedPublisher->publish(speeds);
+        pancake::msg::SwerveRequest request;
+        request.velocity.x = linear.X;
+        request.velocity.y = linear.Y;
+        request.velocity.angular_velocity = angular;
+        request.absolute = true;
+        m_RequestPublisher->publish(request);
 
         UpdateInput();
     }

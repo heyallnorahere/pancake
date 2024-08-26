@@ -1,0 +1,2 @@
+RobotVelocity velocity
+bool absolute

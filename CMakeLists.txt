@@ -13,7 +13,10 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Input.msg"
-  "msg/ChassisSpeeds.msg"
+  "msg/RobotTransform.msg"
+  "msg/RobotVelocity.msg"
+  "msg/OdometryState.msg"
+  "msg/SwerveRequest.msg"
 )
 
 rosidl_get_typesupport_target(CPP_TYPESUPPORT_TARGET
