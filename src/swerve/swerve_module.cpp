@@ -9,19 +9,22 @@ namespace pancake::swerve {
     }
 
     void SwerveModule::Update() {
-        float rotationMotorVelocity = /* placeholder */ 0.f;
+        const auto& driveEncoder = m_Drive.Motor->GetEncoder();
+        const auto& rotationEncoder = m_Rotation.Motor->GetEncoder();
+
+        float rotationMotorVelocity = rotationEncoder.GetMotorVelocity();
         float wheelWellVelocity = -rotationMotorVelocity * m_Rotation.GearRatio;
 
         m_RotationController.SetSetpoint(-m_Target.WheelAngle / m_Rotation.GearRatio);
         m_DriveController.SetSetpoint(m_Target.WheelAngularVelocity / m_Drive.GearRatio +
                                       wheelWellVelocity);
 
-        float driveMotorVelocity = /* placeholder */ 0.f;
+        float driveMotorVelocity = driveEncoder.GetMotorVelocity();
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage,
                                 m_DriveController.Evaluate(driveMotorVelocity));
 
-        float rotationMotorPosition = /* placeholder */ 0.f;
-        m_Rotation.Motor->Setpoint(rev::SetpointType::Velocity,
+        float rotationMotorPosition = rotationEncoder.GetMotorPosition();
+        m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage,
                                    m_RotationController.Evaluate(rotationMotorPosition));
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
