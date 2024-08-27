@@ -34,6 +34,8 @@ namespace pancake::swerve {
         void Update(const std::chrono::duration<float>& delta);
 
         const pancake::msg::OdometryState& GetOdometry() const { return m_Odometry; }
+        const std::vector<SwerveModuleMeta>& GetModules() const { return m_Modules; }
+        float GetWheelRadius() const { return m_WheelRadius; }
 
     private:
         void AddModules();

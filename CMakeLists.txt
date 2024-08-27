@@ -22,11 +22,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 rosidl_get_typesupport_target(CPP_TYPESUPPORT_TARGET
   ${PROJECT_NAME} rosidl_typesupport_cpp)
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
-
 install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/

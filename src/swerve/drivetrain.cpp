@@ -66,13 +66,13 @@ namespace pancake::swerve {
             Vector2 perpendicular = meta.CenterOffset.Rotate(piOver2).Normalize();
 
             // we want this rotated INVERSELY by the chassis rotation
-            Vector2 linear = requestedLinearVelocity.Rotate(-moduleRotation);
-            Vector2 angular = angularRotationVelocity * perpendicular;
-            Vector2 velocity = linear + angular;
+            Vector2 relativeLinear = requestedLinearVelocity.Rotate(-moduleRotation);
+            Vector2 relativeAngular = { 0.f, angularRotationVelocity };
+            Vector2 relativeVelocity = relativeLinear + relativeAngular;
 
             ModuleState target;
-            target.WheelAngle = std::atan2(velocity.Y, velocity.X);
-            target.WheelAngularVelocity = velocity.Length();
+            target.WheelAngle = std::atan2(relativeVelocity.Y, relativeVelocity.X);
+            target.WheelAngularVelocity = relativeVelocity.Length() / m_WheelRadius;
 
             meta.Module->SetTarget(target);
             meta.Module->Update();
@@ -117,7 +117,7 @@ namespace pancake::swerve {
         m_WheelRadius = 1.5f * 0.0254f; // in meters
 
         float angle = std::numbers::pi_v<float> * 1.75f;
-        AddModule(0, 1, { std::cos(angle), std::sin(angle) });
+        AddModule(1, 2, { std::cos(angle), std::sin(angle) });
     }
 
     void Drivetrain::AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset) {

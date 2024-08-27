@@ -11,6 +11,6 @@ if(BUILD_TESTING)
 
     target_link_libraries(test_${TEST_NAME} swerve-lib)
     set_target_properties(test_${TEST_NAME} PROPERTIES
-      CXX_STANDARD 17)
+      CXX_STANDARD 20)
   endforeach()
 endif()

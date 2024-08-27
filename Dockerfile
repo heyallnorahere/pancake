@@ -9,5 +9,5 @@ COPY package.xml CMakeLists.txt launch.sh ./
 COPY include include
 COPY src src
 
-RUN source /opt/ros/iron/setup.bash && colcon build --cmake-args -DBUILD_CLIENT=OFF
+RUN source /opt/ros/iron/setup.bash && colcon build --cmake-args -DBUILD_CLIENT=OFF -DBUILD_TESTING=OFF
 ENTRYPOINT [ "./launch.sh", "robot" ]

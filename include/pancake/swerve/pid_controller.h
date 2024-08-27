@@ -21,19 +21,17 @@ namespace pancake::swerve {
         _Ty Derivative;
     };
 
-    template <typename _Ty, class Enabled = void>
-    class PIDController {
-        // nothing
-    };
-
     enum class IntegrationType { RightRiemann, LeftRiemann };
 
     template <typename _Ty>
-    class PIDController<_Ty, std::enable_if_t<std::is_floating_point_v<_Ty>>> {
+    class PIDController {
     public:
         PIDController(const PID<_Ty>& pid)
             : m_PID(pid), m_Setpoint((_Ty)0), m_IntegralBound({ (_Ty)-1, (_Ty)1 }),
-              m_MaxSamples(10) {}
+              m_MaxSamples(10) {
+            static_assert(std::is_floating_point_v<_Ty>,
+                          "Template type is not a floating-point number!");
+        }
 
         ~PIDController() = default;
 
