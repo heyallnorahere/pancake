@@ -16,8 +16,8 @@ namespace pancake::robot {
 
     static std::unordered_map<pancake::client::GamepadInput, InputState> s_Gamepad;
 
-    static const float s_LinearControlVelocity = 10.f;                             // m/s
-    static const float s_AngularControlVelocity = std::numbers::pi_v<float> * 2.f; // rad/s
+    static const float s_LinearControlVelocity = 1.f / 2.f;                        // m/s
+    static const float s_AngularControlVelocity = std::numbers::pi_v<float> / 4.f; // rad/s
 
     bool Robot::IsInputDown(pancake::client::GamepadInput input) {
         if (!s_Gamepad.contains(input)) {
@@ -77,11 +77,11 @@ namespace pancake::robot {
 
     void Robot::Update() {
         Vector2 direction;
-        direction.X = GetInputAxis(pancake::client::GamepadInput::LeftStick, 1);
+        direction.X = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 1);
         direction.Y = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 0);
         float angularDirection = -GetInputAxis(pancake::client::GamepadInput::RightStick, 0);
 
-        static constexpr float deadzone = 0.01f;
+        static constexpr float deadzone = 0.05f;
         if (direction.Length() < deadzone) {
             direction.X = direction.Y = 0.f;
         }
@@ -90,7 +90,11 @@ namespace pancake::robot {
             angularDirection = 0.f;
         }
 
-        Vector2 linear = direction.Normalize() * s_LinearControlVelocity;
+        if (direction.Length2() > 1.f) {
+            direction = direction.Normalize();
+        }
+
+        Vector2 linear = direction * s_LinearControlVelocity;
         float angular = angularDirection * s_AngularControlVelocity;
 
         pancake::msg::SwerveRequest request;
