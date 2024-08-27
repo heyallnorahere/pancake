@@ -8,5 +8,9 @@ if(BUILD_TESTING)
     cmake_path(GET SOURCE FILENAME SOURCE_FILENAME)
     cmake_path(GET SOURCE_FILENAME STEM TEST_NAME)
     ament_add_gtest(test_${TEST_NAME} ${SOURCE})
+
+    target_link_libraries(test_${TEST_NAME} swerve-lib)
+    set_target_properties(test_${TEST_NAME} PROPERTIES
+      CXX_STANDARD 17)
   endforeach()
 endif()
