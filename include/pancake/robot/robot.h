@@ -14,10 +14,14 @@ namespace pancake::robot {
         static float GetInputAxis(pancake::client::GamepadInput input, size_t axis);
 
         Robot();
+        ~Robot() = default;
 
-    private:
+        Robot(const Robot&) = delete;
+        Robot& operator=(const Robot&) = delete;
+
         void InputReceived(const pancake::msg::Input& input);
 
+    private:
         void Update();
         void UpdateInput();
 

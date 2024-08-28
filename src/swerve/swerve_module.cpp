@@ -32,4 +32,4 @@ namespace pancake::swerve {
     }
 
     void SwerveModule::SetTarget(const ModuleState& target) { m_Target = target; }
-}; // namespace pancake::swerve
+} // namespace pancake::swerve

@@ -1,4 +1,0 @@
-<launch>
-    <node pkg="pancake" exec="client" name="client" />
-    <node pkg="pancake" exec="robot" name="robot" />
-</launch>

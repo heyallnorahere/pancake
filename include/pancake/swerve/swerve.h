@@ -13,6 +13,9 @@ namespace pancake::swerve {
         Swerve();
         ~Swerve() = default;
 
+        Swerve(const Swerve&) = delete;
+        Swerve& operator=(const Swerve&) = delete;
+
     private:
         void Update();
 

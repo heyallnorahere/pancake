@@ -20,6 +20,10 @@ namespace pancake::swerve {
     class SwerveModule {
     public:
         SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation);
+        ~SwerveModule() = default;
+
+        SwerveModule(const SwerveModule&) = delete;
+        SwerveModule& operator=(const SwerveModule&) = delete;
 
         void Update();
         void SetTarget(const ModuleState& target);

@@ -71,8 +71,6 @@ namespace pancake::robot {
         state.Down = input.down;
         state.Up = input.up;
         state.Pressed = input.pressed;
-
-        Update();
     }
 
     void Robot::Update() {

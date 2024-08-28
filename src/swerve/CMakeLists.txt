@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 set(SWERVE_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 file(GLOB_RECURSE SWERVE_SOURCE CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-    "${CMAKE_SOURCE_DIR}/include/pancake-swerve/swerve/*.h")
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+  "${CMAKE_SOURCE_DIR}/include/pancake-swerve/swerve/*.h")
 
 link_libraries(${CPP_TYPESUPPORT_TARGET} librevfree)
 
@@ -16,11 +16,11 @@ target_include_directories(swerve-lib PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 add_executable(swerve ${SWERVE_MAIN})
-target_link_libraries(swerve swerve-lib)
+target_link_libraries(swerve PRIVATE swerve-lib)
 
 set_target_properties(swerve swerve-lib PROPERTIES
-    CXX_STANDARD 20
-    OUTPUT_NAME "swerve")
+  CXX_STANDARD 20
+  OUTPUT_NAME "swerve")
 
 install(TARGETS swerve
   DESTINATION lib/${PROJECT_NAME})

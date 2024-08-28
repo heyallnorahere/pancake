@@ -7,9 +7,11 @@ if(BUILD_TESTING)
   foreach(SOURCE ${TEST_SOURCES})
     cmake_path(GET SOURCE FILENAME SOURCE_FILENAME)
     cmake_path(GET SOURCE_FILENAME STEM TEST_NAME)
-    ament_add_gtest(test_${TEST_NAME} ${SOURCE})
 
-    target_link_libraries(test_${TEST_NAME} swerve-lib)
+    ament_add_gtest(test_${TEST_NAME} ${SOURCE})
+    ament_target_dependencies(test_${TEST_NAME} rclcpp std_msgs)
+
+    target_link_libraries(test_${TEST_NAME} swerve-lib robot-lib ${CPP_TYPESUPPORT_TARGET})
     set_target_properties(test_${TEST_NAME} PROPERTIES
       CXX_STANDARD 20)
   endforeach()
