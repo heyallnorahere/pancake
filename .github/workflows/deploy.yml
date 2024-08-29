@@ -23,10 +23,16 @@ jobs:
           - name: get image name
             shell: bash
             run: echo "REPO=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+          - name: add ssh key
+            shell: bash
+            run: |
+                eval $(ssh-agent)
+                echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+                ssh-add ~/.ssh/id_ed25519
           - name: build & push
             uses: docker/build-push-action@v4
             with:
                 push: true
                 tags: ghcr.io/${{ env.REPO }}:${{ github.sha }},ghcr.io/${{ env.REPO }}:latest
                 file: ./Dockerfile
-                ssh: ${{ secrets.SSH_KEY }}
+                ssh: ${{ env.SSH_AUTH_SOCK }}
