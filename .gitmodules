@@ -1,6 +1,6 @@
 [submodule "vendor/SDL"]
 	path = vendor/SDL
-	url = git@github.com:libsdl-org/SDL.git
+	url = https://github.com/libsdl-org/SDL.git
 [submodule "vendor/librevfree"]
 	path = vendor/librevfree
-	url = git@github.com:heyallnorahere/librevfree.git
+	url = https://github.com/heyallnorahere/librevfree.git
