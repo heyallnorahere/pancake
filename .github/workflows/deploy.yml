@@ -32,3 +32,4 @@ jobs:
                 tags: ghcr.io/${{ env.REPO }}:${{ github.sha }},ghcr.io/${{ env.REPO }}:latest
                 file: ./Dockerfile
                 github-token: ${{ secrets.PAT }}
+                platforms: linux/amd64,linux/arm64
