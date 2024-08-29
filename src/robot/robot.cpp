@@ -63,7 +63,7 @@ namespace pancake::robot {
     }
 
     void Robot::InputReceived(const pancake::msg::Input& input) {
-        RCLCPP_INFO(get_logger(), "Input received: %u", (uint32_t)input.id);
+        RCLCPP_INFO(get_logger(), "random bullshit: %u", (uint32_t)input.id);
 
         auto& state = s_Gamepad[(pancake::client::GamepadInput)input.id];
         std::memcpy(state.Axes.data(), input.axes.data(), state.Axes.size() * sizeof(float));
