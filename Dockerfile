@@ -1,9 +1,9 @@
 FROM ros:iron
 SHELL [ "/bin/bash", "-c" ]
 
-LABEL org.opencontainers.image.source https://github.com/heyallnorahere/pancake
-LABEL org.opencontainers.image.description "Pancake swerve ^_^"
-LABEL org.opencontainers.image.licenses Apache-2.0
+LABEL org.opencontainers.image.source=https://github.com/heyallnorahere/pancake
+LABEL org.opencontainers.image.description="Pancake swerve ^_^"
+LABEL org.opencontainers.image.licenses=Apache-2.0
 
 WORKDIR /app
 COPY vendor vendor
