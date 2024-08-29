@@ -12,6 +12,7 @@ COPY launch launch
 COPY package.xml CMakeLists.txt launch.sh ./
 COPY include include
 COPY src src
+COPY test test
 
 RUN source /opt/ros/iron/setup.bash && colcon build --cmake-args -DBUILD_CLIENT=OFF
 RUN colcon test --ctest-args --output-on-failure --packages-select pancake ; colcon test-result --verbose --all
