@@ -15,5 +15,5 @@ COPY src src
 COPY test test
 
 RUN source /opt/ros/iron/setup.bash && colcon build --cmake-args -DBUILD_CLIENT=OFF
-RUN colcon test --ctest-args --output-on-failure --packages-select pancake ; colcon test-result --verbose --all
+RUN source /opt/ros/iron/setup.bash && colcon test --ctest-args --output-on-failure --packages-select pancake ; colcon test-result --verbose --all
 ENTRYPOINT [ "./launch.sh", "robot" ]
