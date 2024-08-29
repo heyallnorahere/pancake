@@ -27,8 +27,8 @@ jobs:
             shell: bash
             run: |
                 eval $(ssh-agent)
-                echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-                ssh-add ~/.ssh/id_ed25519
+                echo "${{ secrets.SSH_KEY }}" > ./id_ed25519
+                ssh-add ./id_ed25519
           - name: build & push
             uses: docker/build-push-action@v4
             with:
