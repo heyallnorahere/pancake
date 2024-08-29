@@ -31,6 +31,7 @@ jobs:
                 chmod 400 id_ed25519
                 ssh-add ./id_ed25519
                 rm id_ed25519
+                echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> ${GITHUB_ENV}
           - name: build & push
             uses: docker/build-push-action@v4
             with:
