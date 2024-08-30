@@ -102,11 +102,11 @@ namespace pancake::swerve {
 
     void Drivetrain::AddModules() {
         // todo: set pid
-        m_DrivePID.Proportional = 0.f;
+        m_DrivePID.Proportional = 1.f;
         m_DrivePID.Integral = 0.f;
         m_DrivePID.Derivative = 0.f;
 
-        m_RotationPID.Proportional = 0.f;
+        m_RotationPID.Proportional = 1.f;
         m_RotationPID.Integral = 0.f;
         m_RotationPID.Derivative = 0.f;
 
