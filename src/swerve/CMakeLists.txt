@@ -5,7 +5,7 @@ file(GLOB_RECURSE SWERVE_SOURCE CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
   "${CMAKE_SOURCE_DIR}/include/pancake-swerve/swerve/*.h")
 
-link_libraries(${CPP_TYPESUPPORT_TARGET} librevfree)
+link_libraries(${CPP_TYPESUPPORT_TARGET} librevfree nlohmann_json)
 
 list(REMOVE_ITEM SWERVE_SOURCE ${SWERVE_MAIN})
 add_library(swerve-lib STATIC ${SWERVE_SOURCE})

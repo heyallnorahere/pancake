@@ -20,9 +20,25 @@ namespace pancake::swerve {
         Vector2 CenterOffset;
     };
 
+    struct SwerveModuleDesc {
+        uint8_t Drive, Rotation;
+        Vector2 CenterOffset;
+    };
+
+    struct SwerveFunction {
+        MotorConstants<float> Constants;
+        float GearRatio;
+    };
+
     class Drivetrain {
     public:
-        Drivetrain(bool sim);
+        struct Config {
+            float WheelRadius;
+            SwerveFunction Drive, Rotation;
+            std::vector<SwerveModuleDesc> Modules;
+        };
+
+        Drivetrain(const Config& config, bool sim);
         ~Drivetrain();
 
         Drivetrain(const Drivetrain&) = delete;
@@ -35,16 +51,15 @@ namespace pancake::swerve {
 
         const pancake::msg::OdometryState& GetOdometry() const { return m_Odometry; }
         const std::vector<SwerveModuleMeta>& GetModules() const { return m_Modules; }
-        float GetWheelRadius() const { return m_WheelRadius; }
+        
+        float GetWheelRadius() const { return m_Config.WheelRadius; }
 
     private:
         void AddModules();
         void AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset);
 
         std::vector<SwerveModuleMeta> m_Modules;
-        PID<float> m_DrivePID, m_RotationPID;
-        float m_DriveGearRatio, m_RotationGearRatio;
-        float m_WheelRadius;
+        Config m_Config;
 
         pancake::msg::SwerveRequest m_Request;
         pancake::msg::OdometryState m_Odometry;

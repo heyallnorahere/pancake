@@ -4,3 +4,5 @@ services:
     build: .
     restart: unless-stopped
     network_mode: host
+    volumes:
+      ./config/:/pancake/config/

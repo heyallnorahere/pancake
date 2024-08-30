@@ -4,12 +4,19 @@
 #include <librevfree.h>
 
 #include "pancake/swerve/pid_controller.h"
+#include "pancake/swerve/feedforward.h"
 
 namespace pancake::swerve {
+    template <typename _Ty>
+    struct MotorConstants {
+        PID<float> Feedback;
+        SVA<float> Feedforward;
+    };
+
     struct SwerveMotor {
         std::shared_ptr<rev::SparkMax> Motor;
-        PID<float> ControllerPID;
         float GearRatio;
+        MotorConstants<float> Constants;
     };
 
     struct ModuleState {
@@ -36,5 +43,6 @@ namespace pancake::swerve {
 
         SwerveMotor m_Drive, m_Rotation;
         PIDController<float> m_DriveController, m_RotationController;
+        Feedforward<float> m_DriveFeedforward, m_RotationFeedforward;
     };
 }; // namespace pancake::swerve

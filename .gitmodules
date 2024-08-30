@@ -4,3 +4,6 @@
 [submodule "vendor/librevfree"]
 	path = vendor/librevfree
 	url = https://github.com/heyallnorahere/librevfree.git
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json.git

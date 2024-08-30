@@ -5,7 +5,9 @@
 #include <numbers>
 
 namespace pancake::swerve {
-    Drivetrain::Drivetrain(bool sim) : m_Sim(sim) { AddModules(); }
+    Drivetrain::Drivetrain(const Config& config, bool sim) : m_Config(config), m_Sim(sim) {
+        AddModules();
+    }
 
     Drivetrain::~Drivetrain() {
         // we want motors to be dealt with before sim handlers
@@ -72,7 +74,7 @@ namespace pancake::swerve {
 
             ModuleState target;
             target.WheelAngle = std::atan2(relativeVelocity.Y, relativeVelocity.X);
-            target.WheelAngularVelocity = relativeVelocity.Length() / m_WheelRadius;
+            target.WheelAngularVelocity = relativeVelocity.Length() / m_Config.WheelRadius;
 
             meta.Module->SetTarget(target);
             meta.Module->Update();
@@ -80,7 +82,7 @@ namespace pancake::swerve {
             const auto& state = meta.Module->GetState();
             float wheelAngle = rotationalOffset + state.WheelAngle;
             float wheelAngularVelocity = state.WheelAngularVelocity;
-            float moduleVelocityLength = wheelAngularVelocity * m_WheelRadius;
+            float moduleVelocityLength = wheelAngularVelocity * m_Config.WheelRadius;
 
             Vector2 moduleVelocity;
             moduleVelocity.X = moduleVelocityLength * std::cos(wheelAngle);
@@ -101,20 +103,8 @@ namespace pancake::swerve {
     }
 
     void Drivetrain::AddModules() {
-        // todo: set pid
-        m_DrivePID.Proportional = 1.f;
-        m_DrivePID.Integral = 0.f;
-        m_DrivePID.Derivative = 0.f;
-
-        m_RotationPID.Proportional = 1.f;
-        m_RotationPID.Integral = 0.f;
-        m_RotationPID.Derivative = 0.f;
-
         // measurements taken from CAD
         // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/4001f8a0b9bee7a60796b187/e/a1fbf0c2138da401bd4bce14?renderMode=0&uiState=66c665ab45ca2447cfe6c702
-        m_DriveGearRatio = 2.f / 5.f;
-        m_RotationGearRatio = 1.f / 48.f;
-        m_WheelRadius = 1.5f * 0.0254f; // in meters
 
         float angle = std::numbers::pi_v<float> * 1.75f;
         AddModule(1, 2, { std::cos(angle), std::sin(angle) });
@@ -131,13 +121,13 @@ namespace pancake::swerve {
 
         SwerveMotor driveMotor;
         driveMotor.Motor = std::make_shared<rev::SparkMax>(driveID, network);
-        driveMotor.ControllerPID = m_DrivePID;
-        driveMotor.GearRatio = m_DriveGearRatio;
+        driveMotor.Constants = m_Config.Drive.Constants;
+        driveMotor.GearRatio = m_Config.Drive.GearRatio;
 
         SwerveMotor rotationMotor;
         rotationMotor.Motor = std::make_shared<rev::SparkMax>(rotationID, network);
-        rotationMotor.ControllerPID = m_RotationPID;
-        rotationMotor.GearRatio = m_RotationGearRatio;
+        rotationMotor.Constants = m_Config.Rotation.Constants;
+        rotationMotor.GearRatio = m_Config.Rotation.GearRatio;
 
         SwerveModuleMeta meta;
         meta.Module = std::make_shared<SwerveModule>(driveMotor, rotationMotor);

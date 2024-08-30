@@ -42,7 +42,10 @@ TEST(pancake, module_test) {
     requestedLinear.Y = request.velocity.y;
     float requestedAngular = request.velocity.angular_velocity;
 
-    pancake::swerve::Drivetrain swerve(true);
+    pancake::swerve::Drivetrain::Config config;
+    config.Modules.push_back({ 1, 2, { 1.f, 1.f } });
+
+    pancake::swerve::Drivetrain swerve({}, true);
     swerve.SetRequest(request);
     swerve.Update(std::chrono::duration_cast<std::chrono::duration<float>>(1ms));
 
