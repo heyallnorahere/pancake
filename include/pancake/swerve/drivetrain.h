@@ -51,12 +51,11 @@ namespace pancake::swerve {
 
         const pancake::msg::OdometryState& GetOdometry() const { return m_Odometry; }
         const std::vector<SwerveModuleMeta>& GetModules() const { return m_Modules; }
-        
+
         float GetWheelRadius() const { return m_Config.WheelRadius; }
 
     private:
-        void AddModules();
-        void AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset);
+        void AddModule(const SwerveModuleDesc& desc);
 
         std::vector<SwerveModuleMeta> m_Modules;
         Config m_Config;

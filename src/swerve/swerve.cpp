@@ -11,6 +11,11 @@ namespace pancake {
         src["X"].get_to(dst.X);
         src["Y"].get_to(dst.Y);
     }
+
+    void to_json(nlohmann::json& dst, const Vector2& src) {
+        dst["X"] = src.X;
+        dst["Y"] = src.Y;
+    }
 }; // namespace pancake
 
 namespace pancake::swerve {
@@ -42,6 +47,7 @@ namespace pancake::swerve {
     void from_json(const nlohmann::json& src, SwerveModuleDesc& dst) {
         src["CenterOffset"].get_to(dst.CenterOffset);
         src["DriveID"].get_to(dst.Drive);
+        src["RotationID"].get_to(dst.Rotation);
     }
 
     void from_json(const nlohmann::json& src, Drivetrain::Config& dst) {
@@ -51,16 +57,56 @@ namespace pancake::swerve {
         src["Modules"].get_to(dst.Modules);
     }
 
+    template <typename _Ty>
+    void to_json(nlohmann::json& dst, const PID<_Ty>& src) {
+        dst["P"] = src.Proportional;
+        dst["I"] = src.Integral;
+        dst["D"] = src.Derivative;
+    }
+
+    template <typename _Ty>
+    void to_json(nlohmann::json& dst, const SVA<_Ty>& src) {
+        dst["S"] = src.Sign;
+        dst["V"] = src.Velocity;
+        dst["A"] = src.Acceleration;
+    }
+
+    template <typename _Ty>
+    void to_json(nlohmann::json& dst, const MotorConstants<_Ty>& src) {
+        dst["PID"] = src.Feedback;
+        dst["Feedforward"] = src.Feedforward;
+    }
+
+    void to_json(nlohmann::json& dst, const SwerveFunction& src) {
+        dst["Constants"] = src.Constants;
+        dst["GearRatio"] = src.GearRatio;
+    }
+
+    void to_json(nlohmann::json& dst, const SwerveModuleDesc& src) {
+        dst["CenterOffset"] = src.CenterOffset;
+        dst["DriveID"] = src.Drive;
+        dst["RotationID"] = src.Rotation;
+    }
+
+    void to_json(nlohmann::json& dst, const Drivetrain::Config& src) {
+        dst["WheelRadius"] = src.WheelRadius;
+        dst["Drive"] = src.Drive;
+        dst["Rotation"] = src.Rotation;
+        dst["Modules"] = src.Modules;
+    }
+
     Swerve::Swerve() : Node("swerve") {
         Drivetrain::Config config;
         config.Drive = config.Rotation = {};
 
+        // measurements taken from CAD
+        // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/4001f8a0b9bee7a60796b187/e/a1fbf0c2138da401bd4bce14?renderMode=0&uiState=66c665ab45ca2447cfe6c702
         config.WheelRadius = 1.5f * 0.0254f; // in meters
         config.Drive.GearRatio = 2.f / 5.f;
         config.Rotation.GearRatio = -1.f / 48.f;
 
         if (!LoadConfig(get_name(), config)) {
-            // ???
+            SaveConfig(get_name(), config);
         }
 
         m_Drivetrain = std::make_shared<Drivetrain>(config, false);

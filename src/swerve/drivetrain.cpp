@@ -6,7 +6,9 @@
 
 namespace pancake::swerve {
     Drivetrain::Drivetrain(const Config& config, bool sim) : m_Config(config), m_Sim(sim) {
-        AddModules();
+        for (const auto& desc : m_Config.Modules) {
+            AddModule(desc);
+        }
     }
 
     Drivetrain::~Drivetrain() {
@@ -102,37 +104,29 @@ namespace pancake::swerve {
         m_Odometry.transform.rotation += m_Odometry.velocity.angular_velocity * delta.count();
     }
 
-    void Drivetrain::AddModules() {
-        // measurements taken from CAD
-        // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/4001f8a0b9bee7a60796b187/e/a1fbf0c2138da401bd4bce14?renderMode=0&uiState=66c665ab45ca2447cfe6c702
-
-        float angle = std::numbers::pi_v<float> * 1.75f;
-        AddModule(1, 2, { std::cos(angle), std::sin(angle) });
-    }
-
-    void Drivetrain::AddModule(uint8_t driveID, uint8_t rotationID, const Vector2& centerOffset) {
+    void Drivetrain::AddModule(const SwerveModuleDesc& desc) {
         static const std::string network = "can0";
 
         std::vector<std::shared_ptr<rev::sim::SparkMaxSim>> handlers;
         if (m_Sim) {
-            handlers = { std::make_shared<rev::sim::SparkMaxSim>(driveID),
-                         std::make_shared<rev::sim::SparkMaxSim>(rotationID) };
+            handlers = { std::make_shared<rev::sim::SparkMaxSim>(desc.Drive),
+                         std::make_shared<rev::sim::SparkMaxSim>(desc.Rotation) };
         }
 
         SwerveMotor driveMotor;
-        driveMotor.Motor = std::make_shared<rev::SparkMax>(driveID, network);
+        driveMotor.Motor = std::make_shared<rev::SparkMax>(desc.Drive, network);
         driveMotor.Constants = m_Config.Drive.Constants;
         driveMotor.GearRatio = m_Config.Drive.GearRatio;
 
         SwerveMotor rotationMotor;
-        rotationMotor.Motor = std::make_shared<rev::SparkMax>(rotationID, network);
+        rotationMotor.Motor = std::make_shared<rev::SparkMax>(desc.Rotation, network);
         rotationMotor.Constants = m_Config.Rotation.Constants;
         rotationMotor.GearRatio = m_Config.Rotation.GearRatio;
 
         SwerveModuleMeta meta;
         meta.Module = std::make_shared<SwerveModule>(driveMotor, rotationMotor);
-        meta.CenterOffset = centerOffset;
-        meta.MotorIDs = { driveID, rotationID };
+        meta.CenterOffset = desc.CenterOffset;
+        meta.MotorIDs = { desc.Drive, desc.Rotation };
 
         m_Modules.push_back(meta);
         m_SimHandlers.insert(m_SimHandlers.end(), handlers.begin(), handlers.end());
