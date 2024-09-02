@@ -71,9 +71,11 @@ namespace pancake::robot {
         state.Down = input.down;
         state.Up = input.up;
         state.Pressed = input.pressed;
+
+        ProcessInput();
     }
 
-    void Robot::Update() {
+    void Robot::ProcessInput() {
         Vector2 direction;
         direction.X = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 1);
         direction.Y = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 0);
@@ -101,9 +103,9 @@ namespace pancake::robot {
         request.velocity.angular_velocity = angular;
         request.absolute = true;
         m_RequestPublisher->publish(request);
-
-        UpdateInput();
     }
+
+    void Robot::Update() { UpdateInput(); }
 
     void Robot::UpdateInput() {
         for (auto& [id, state] : s_Gamepad) {

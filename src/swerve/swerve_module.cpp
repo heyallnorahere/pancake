@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numbers>
+#include <iostream>
 
 namespace pancake::swerve {
     SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation)
@@ -32,21 +33,26 @@ namespace pancake::swerve {
         float driveMotorVelocity = driveEncoder.GetMotorVelocity();
         float driveFeedforward = m_DriveFeedforward.Evaluate(desiredVelocity);
 
-        m_Drive.Motor->Setpoint(rev::SetpointType::Voltage,
-                                std::clamp(m_DriveController.Evaluate(driveMotorVelocity),
-                                           -driveFeedforward, driveFeedforward));
+        float driveVoltage = std::clamp(m_DriveController.Evaluate(driveMotorVelocity),
+                                        -driveFeedforward, driveFeedforward);
+
+        m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
         float rotationMotorPosition = rotationEncoder.GetMotorPosition();
         float rotationFeedforward =
             m_RotationFeedforward.Evaluate(Signum(desiredRotation - rotationMotorPosition) *
                                            std::numbers::pi_v<float> * 2.f); // ???
+        
+        float rotationVoltage = std::clamp(m_RotationController.Evaluate(rotationMotorPosition),
+                                           -rotationFeedforward, rotationFeedforward);
 
-        m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage,
-                                   std::clamp(m_RotationController.Evaluate(rotationMotorPosition),
-                                              -rotationFeedforward, rotationFeedforward));
+        m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
         m_State.WheelAngle = rotationMotorPosition * m_Drive.GearRatio;
+
+        std::cout << "Drive voltage: " << driveVoltage << std::endl;
+        std::cout << "Rotation voltage: " << rotationVoltage << std::endl;
     }
 
     void SwerveModule::SetTarget(const ModuleState& target) { m_Target = target; }

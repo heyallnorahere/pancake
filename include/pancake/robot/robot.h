@@ -22,6 +22,8 @@ namespace pancake::robot {
         void InputReceived(const pancake::msg::Input& input);
 
     private:
+        void ProcessInput();
+        
         void Update();
         void UpdateInput();
 

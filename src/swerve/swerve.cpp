@@ -3,6 +3,7 @@
 #include "pancake/config.h"
 
 #include <chrono>
+#include <string>
 
 using namespace std::chrono_literals;
 
@@ -111,6 +112,17 @@ namespace pancake::swerve {
 
         m_Drivetrain = std::make_shared<Drivetrain>(config, false);
 
+        const auto& modules = m_Drivetrain->GetModules();
+        for (size_t i = 0; i < modules.size(); i++) {
+            auto modulePath = "/pancake/swerve/module/" + std::to_string(i);
+
+            ModuleTelemetry telemetry;
+            telemetry.Target = create_publisher<pancake::msg::ModuleState>(modulePath + "/target", 10);
+            telemetry.State = create_publisher<pancake::msg::ModuleState>(modulePath + "/state", 10);
+            
+            m_ModuleTelemetry.push_back(telemetry);
+        }
+
         m_RequestSubscriber = create_subscription<pancake::msg::SwerveRequest>(
             "/pancake/swerve/request", 10,
             std::bind(&Drivetrain::SetRequest, m_Drivetrain.get(), std::placeholders::_1));
@@ -133,5 +145,24 @@ namespace pancake::swerve {
 
         m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
         m_OdometryPublisher->publish(m_Drivetrain->GetOdometry());
+
+        const auto& modules = m_Drivetrain->GetModules();
+        for (size_t i = 0; i < modules.size(); i++) {
+            const auto& module = modules[i].Module;
+            const auto& telemetry = m_ModuleTelemetry[i];
+
+            pancake::msg::ModuleState sentState, sentTarget;
+            const auto& state = module->GetState();
+            const auto& target = module->GetTarget();
+
+            sentState.angle = state.WheelAngle;
+            sentState.wheel_angular_velocity = state.WheelAngularVelocity;
+
+            sentTarget.angle = target.WheelAngle;
+            sentTarget.wheel_angular_velocity = target.WheelAngularVelocity;
+
+            telemetry.State->publish(sentState);
+            telemetry.Target->publish(sentTarget);
+        }
     }
 }; // namespace pancake::swerve

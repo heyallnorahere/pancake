@@ -2,12 +2,17 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "pancake/swerve/drivetrain.h"
+#include "pancake/msg/module_state.hpp"
 
 #include <memory>
 #include <chrono>
 #include <optional>
 
 namespace pancake::swerve {
+    struct ModuleTelemetry {
+        rclcpp::Publisher<pancake::msg::ModuleState>::SharedPtr Target, State;
+    };
+
     class Swerve : public rclcpp::Node {
     public:
         Swerve();
@@ -27,5 +32,7 @@ namespace pancake::swerve {
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::optional<std::chrono::high_resolution_clock::time_point> m_LastUpdate;
+
+        std::vector<ModuleTelemetry> m_ModuleTelemetry;
     };
 } // namespace pancake::swerve

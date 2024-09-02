@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RobotVelocity.msg"
   "msg/OdometryState.msg"
   "msg/SwerveRequest.msg"
+  "msg/ModuleState.msg"
 )
 
 rosidl_get_typesupport_target(CPP_TYPESUPPORT_TARGET
