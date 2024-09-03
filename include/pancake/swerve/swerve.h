@@ -1,5 +1,5 @@
 #pragma once
-#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/node.hpp>
 
 #include "pancake/swerve/drivetrain.h"
 #include "pancake/msg/module_state.hpp"

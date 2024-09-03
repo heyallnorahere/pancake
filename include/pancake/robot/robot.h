@@ -1,5 +1,5 @@
 #pragma once
-#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/node.hpp>
 
 #include "pancake/msg/input.hpp"
 #include "pancake/msg/swerve_request.hpp"
