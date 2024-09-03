@@ -114,7 +114,7 @@ namespace pancake::swerve {
 
         const auto& modules = m_Drivetrain->GetModules();
         for (size_t i = 0; i < modules.size(); i++) {
-            auto modulePath = "/pancake/swerve/module/" + std::to_string(i);
+            auto modulePath = "/pancake/swerve/module/mod" + std::to_string(i);
 
             ModuleTelemetry telemetry;
             telemetry.Target = create_publisher<pancake::msg::ModuleState>(modulePath + "/target", 10);
