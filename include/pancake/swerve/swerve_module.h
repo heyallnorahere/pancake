@@ -10,7 +10,7 @@ namespace pancake::swerve {
     template <typename _Ty>
     struct MotorConstants {
         PID<float> Feedback;
-        SVA<float> Feedforward;
+        SVA<float> Feedforward; // not used for rotation
     };
 
     struct SwerveMotor {
@@ -43,6 +43,6 @@ namespace pancake::swerve {
 
         SwerveMotor m_Drive, m_Rotation;
         PIDController<float> m_DriveController, m_RotationController;
-        Feedforward<float> m_DriveFeedforward, m_RotationFeedforward;
+        Feedforward<float> m_DriveFeedforward;
     };
 }; // namespace pancake::swerve
