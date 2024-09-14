@@ -51,11 +51,31 @@ namespace pancake::swerve {
         src["RotationID"].get_to(dst.Rotation);
     }
 
+    static const std::unordered_map<std::string, RotationEncoderMode> s_ModeMap = {
+        { "Motor", RotationEncoderMode::Motor },
+        { "Output", RotationEncoderMode::Output }
+    };
+
+    void from_json(const nlohmann::json& src, RotationEncoderConfig& dst) {
+        src["GearRatio"].get_to(dst.GearRatio);
+
+        auto modeName = src["Mode"].get<std::string>();
+        auto it = s_ModeMap.find(modeName);
+
+        if (it != s_ModeMap.end()) {
+            dst.Mode = it->second;
+        } else {
+            throw std::runtime_error("Invalid encoder mode!");
+        }
+    }
+
     void from_json(const nlohmann::json& src, Drivetrain::Config& dst) {
+        src["Network"].get_to(dst.Network);
         src["WheelRadius"].get_to(dst.WheelRadius);
         src["Drive"].get_to(dst.Drive);
         src["Rotation"].get_to(dst.Rotation);
         src["Modules"].get_to(dst.Modules);
+        src["RotationEncoder"].get_to(dst.EncoderConfig);
     }
 
     template <typename _Ty>
@@ -89,11 +109,31 @@ namespace pancake::swerve {
         dst["RotationID"] = src.Rotation;
     }
 
+    void to_json(nlohmann::json& dst, const RotationEncoderConfig& src) {
+        dst["GearRatio"] = src.GearRatio;
+
+        bool modeFound = false;
+        for (const auto& [name, mode] : s_ModeMap) {
+            if (mode == src.Mode) {
+                dst["Mode"] = name;
+
+                modeFound = true;
+                break;
+            }
+        }
+
+        if (!modeFound) {
+            throw std::runtime_error("Invalid encoder mode!");
+        }
+    }
+
     void to_json(nlohmann::json& dst, const Drivetrain::Config& src) {
+        dst["Network"] = src.Network;
         dst["WheelRadius"] = src.WheelRadius;
         dst["Drive"] = src.Drive;
         dst["Rotation"] = src.Rotation;
         dst["Modules"] = src.Modules;
+        dst["RotationEncoder"] = src.EncoderConfig;
     }
 
     Swerve::Swerve() : Node("swerve") {
@@ -101,10 +141,13 @@ namespace pancake::swerve {
         config.Drive = config.Rotation = {};
 
         // measurements taken from CAD
-        // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/4001f8a0b9bee7a60796b187/e/a1fbf0c2138da401bd4bce14?renderMode=0&uiState=66c665ab45ca2447cfe6c702
+        // https://cad.onshape.com/documents/a3570f35688a1cf16e8e4419/v/433e7b2f8e33ea9906b8780e/e/a1fbf0c2138da401bd4bce14
+        config.Network = "can0";
         config.WheelRadius = 1.5f * 0.0254f; // in meters
         config.Drive.GearRatio = 2.f / 5.f;
         config.Rotation.GearRatio = -1.f / 48.f;
+        config.EncoderConfig.Mode = RotationEncoderMode::Output;
+        config.EncoderConfig.GearRatio = 1.f;
 
         if (!LoadConfig(get_name(), config)) {
             SaveConfig(get_name(), config);

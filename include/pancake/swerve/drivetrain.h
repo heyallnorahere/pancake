@@ -33,9 +33,11 @@ namespace pancake::swerve {
     class Drivetrain {
     public:
         struct Config {
+            std::string Network;
             float WheelRadius;
             SwerveFunction Drive, Rotation;
             std::vector<SwerveModuleDesc> Modules;
+            RotationEncoderConfig EncoderConfig;
         };
 
         Drivetrain(const Config& config, bool sim);

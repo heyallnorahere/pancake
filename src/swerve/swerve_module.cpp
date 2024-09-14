@@ -7,15 +7,14 @@
 #include <iostream>
 
 namespace pancake::swerve {
-    SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation)
+    SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
+                               const RotationEncoderConfig& encoderConfig)
         : m_Drive(drive), m_Rotation(rotation), m_DriveController(drive.Constants.Feedback),
           m_RotationController(rotation.Constants.Feedback),
-          m_DriveFeedforward(drive.Constants.Feedforward) {
+          m_DriveFeedforward(drive.Constants.Feedforward), m_EncoderConfig(encoderConfig) {
         m_Target.WheelAngle = 0.f;
         m_Target.WheelAngularVelocity = 0.f;
     }
-
-    static float Signum(float x) { return x > 0.f ? 1.f : -1.f; }
 
     void SwerveModule::Update() {
         const auto& driveEncoder = m_Drive.Motor->GetEncoder();
@@ -38,7 +37,15 @@ namespace pancake::swerve {
 
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
-        float rotationMotorPosition = rotationEncoder.GetMotorPosition();
+        // when using an absolute encoder, velocity has a different scale than position
+        // so we need to scale it with the gear ratios provided by the config
+        float encoderScale = 1.f / m_EncoderConfig.GearRatio;
+        if (m_EncoderConfig.Mode == RotationEncoderMode::Output) {
+            encoderScale /= m_Rotation.GearRatio;
+        }
+
+        float encoderPosition = rotationEncoder.GetMotorPosition(rev::EncoderMode::Absolute);
+        float rotationMotorPosition = encoderPosition * encoderScale;
         float rotationVoltage = m_RotationController.Evaluate(rotationMotorPosition);
 
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);

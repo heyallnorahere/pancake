@@ -105,28 +105,29 @@ namespace pancake::swerve {
     }
 
     void Drivetrain::AddModule(const SwerveModuleDesc& desc) {
-        static const std::string network = "can0";
+        SwerveModuleMeta meta;
+        meta.CenterOffset = desc.CenterOffset;
+        meta.MotorIDs = { desc.Drive, desc.Rotation };
 
         std::vector<std::shared_ptr<rev::sim::SparkMaxSim>> handlers;
         if (m_Sim) {
-            handlers = { std::make_shared<rev::sim::SparkMaxSim>(desc.Drive),
-                         std::make_shared<rev::sim::SparkMaxSim>(desc.Rotation) };
+            for (uint8_t id : meta.MotorIDs) {
+                handlers.push_back(std::make_shared<rev::sim::SparkMaxSim>(id));
+            }
         }
 
         SwerveMotor driveMotor;
-        driveMotor.Motor = std::make_shared<rev::SparkMax>(desc.Drive, network);
+        driveMotor.Motor = std::make_shared<rev::SparkMax>(desc.Drive, m_Config.Network);
         driveMotor.Constants = m_Config.Drive.Constants;
         driveMotor.GearRatio = m_Config.Drive.GearRatio;
 
         SwerveMotor rotationMotor;
-        rotationMotor.Motor = std::make_shared<rev::SparkMax>(desc.Rotation, network);
+        rotationMotor.Motor = std::make_shared<rev::SparkMax>(desc.Rotation, m_Config.Network);
         rotationMotor.Constants = m_Config.Rotation.Constants;
         rotationMotor.GearRatio = m_Config.Rotation.GearRatio;
 
-        SwerveModuleMeta meta;
-        meta.Module = std::make_shared<SwerveModule>(driveMotor, rotationMotor);
-        meta.CenterOffset = desc.CenterOffset;
-        meta.MotorIDs = { desc.Drive, desc.Rotation };
+        meta.Module =
+            std::make_shared<SwerveModule>(driveMotor, rotationMotor, m_Config.EncoderConfig);
 
         m_Modules.push_back(meta);
         m_SimHandlers.insert(m_SimHandlers.end(), handlers.begin(), handlers.end());
