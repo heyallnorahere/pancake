@@ -14,13 +14,15 @@ namespace pancake::swerve {
           m_DriveFeedforward(drive.Constants.Feedforward), m_EncoderConfig(encoderConfig) {
         m_Target.WheelAngle = 0.f;
         m_Target.WheelAngularVelocity = 0.f;
+
+        m_DriveEncoder = std::make_shared<rev::Encoder>(m_Drive.Motor);
+        m_RotationEncoder = std::make_shared<rev::Encoder>(m_Rotation.Motor);
+        m_DutyCycleEncoder =
+            std::make_shared<rev::Encoder>(m_Rotation.Motor, rev::EncoderMode::DutyCycle);
     }
 
     void SwerveModule::Update() {
-        const auto& driveEncoder = m_Drive.Motor->GetEncoder();
-        const auto& rotationEncoder = m_Rotation.Motor->GetEncoder();
-
-        float rotationMotorVelocity = rotationEncoder.GetMotorVelocity();
+        float rotationMotorVelocity = m_RotationEncoder->GetMotorVelocity();
         float wheelWellVelocity = rotationMotorVelocity * m_Rotation.GearRatio;
 
         float desiredRotation = m_Target.WheelAngle / m_Rotation.GearRatio;
@@ -30,7 +32,7 @@ namespace pancake::swerve {
         m_RotationController.SetSetpoint(desiredRotation);
         m_DriveController.SetSetpoint(desiredVelocity);
 
-        float driveMotorVelocity = driveEncoder.GetMotorVelocity();
+        float driveMotorVelocity = m_DriveEncoder->GetMotorVelocity();
         float driveFeedforward = std::abs(m_DriveFeedforward.Evaluate(desiredVelocity));
         float drivePID = m_DriveController.Evaluate(driveMotorVelocity);
         float driveVoltage = drivePID + driveFeedforward;
@@ -44,7 +46,7 @@ namespace pancake::swerve {
             encoderScale /= m_Rotation.GearRatio;
         }
 
-        float encoderPosition = rotationEncoder.GetMotorPosition(rev::EncoderMode::Absolute);
+        float encoderPosition = m_DutyCycleEncoder->GetMotorPosition();
         float rotationMotorPosition = encoderPosition * encoderScale;
         float rotationVoltage = m_RotationController.Evaluate(rotationMotorPosition);
 

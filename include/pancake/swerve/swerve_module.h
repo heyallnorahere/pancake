@@ -24,10 +24,7 @@ namespace pancake::swerve {
         float WheelAngularVelocity;
     };
 
-    enum class RotationEncoderMode {
-        Motor,
-        Output
-    };
+    enum class RotationEncoderMode { Motor, Output };
 
     struct RotationEncoderConfig {
         RotationEncoderMode Mode;
@@ -36,7 +33,8 @@ namespace pancake::swerve {
 
     class SwerveModule {
     public:
-        SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation, const RotationEncoderConfig& encoderConfig);
+        SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
+                     const RotationEncoderConfig& encoderConfig);
         ~SwerveModule() = default;
 
         SwerveModule(const SwerveModule&) = delete;
@@ -55,5 +53,8 @@ namespace pancake::swerve {
         PIDController<float> m_DriveController, m_RotationController;
         Feedforward<float> m_DriveFeedforward;
         RotationEncoderConfig m_EncoderConfig;
+
+        std::shared_ptr<rev::Encoder> m_DriveEncoder;
+        std::shared_ptr<rev::Encoder> m_RotationEncoder, m_DutyCycleEncoder;
     };
 }; // namespace pancake::swerve
