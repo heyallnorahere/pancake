@@ -21,6 +21,15 @@ namespace pancake::swerve {
             std::make_shared<rev::Encoder>(m_Rotation.Motor, rev::EncoderMode::DutyCycle);
     }
 
+    static float NormalizeAngle(float angle) {
+        const float pi = std::numbers::pi_v<float>;
+        while (std::abs(angle) > pi) {
+            angle -= pi * 2.f * (angle > 0.f ? 1.f : -1.f);
+        }
+
+        return angle;
+    }
+
     void SwerveModule::Update() {
         float rotationMotorVelocity = m_RotationEncoder->GetMotorVelocity();
         float wheelWellVelocity = rotationMotorVelocity * m_Rotation.GearRatio;
@@ -47,18 +56,21 @@ namespace pancake::swerve {
         }
 
         float encoderPosition = m_DutyCycleEncoder->GetMotorPosition();
-        float rotationMotorPosition = encoderPosition * encoderScale;
+        float rotationMotorPosition = NormalizeAngle(encoderPosition * encoderScale);
         float rotationVoltage = m_RotationController.Evaluate(rotationMotorPosition);
 
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
-        m_State.WheelAngle = rotationMotorPosition * m_Drive.GearRatio;
+        m_State.WheelAngle = rotationMotorPosition;
 
         auto logger = rclcpp::get_logger("swerve");
         RCLCPP_INFO(logger, "Drive voltage: %f", driveVoltage);
         RCLCPP_INFO(logger, "Rotation voltage: %f", rotationVoltage);
     }
 
-    void SwerveModule::SetTarget(const ModuleState& target) { m_Target = target; }
+    void SwerveModule::SetTarget(const ModuleState& target) {
+        m_Target = target;
+        m_Target.WheelAngle = NormalizeAngle(m_Target.WheelAngle);
+    }
 } // namespace pancake::swerve

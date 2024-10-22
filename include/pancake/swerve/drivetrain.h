@@ -18,11 +18,13 @@ namespace pancake::swerve {
         std::shared_ptr<SwerveModule> Module;
         std::vector<uint8_t> MotorIDs;
         Vector2 CenterOffset;
+        float RotationalOffset;
     };
 
     struct SwerveModuleDesc {
         uint8_t Drive, Rotation;
         Vector2 CenterOffset;
+        float RotationalOffset;
     };
 
     struct SwerveFunction {

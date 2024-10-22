@@ -47,6 +47,7 @@ namespace pancake::swerve {
 
     void from_json(const nlohmann::json& src, SwerveModuleDesc& dst) {
         src["CenterOffset"].get_to(dst.CenterOffset);
+        src["RotationalOffset"].get_to(dst.RotationalOffset);
         src["DriveID"].get_to(dst.Drive);
         src["RotationID"].get_to(dst.Rotation);
     }
@@ -105,6 +106,7 @@ namespace pancake::swerve {
 
     void to_json(nlohmann::json& dst, const SwerveModuleDesc& src) {
         dst["CenterOffset"] = src.CenterOffset;
+        dst["RotationalOffset"] = src.RotationalOffset;
         dst["DriveID"] = src.Drive;
         dst["RotationID"] = src.Rotation;
     }

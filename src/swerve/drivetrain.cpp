@@ -55,23 +55,21 @@ namespace pancake::swerve {
         m_Odometry.velocity.angular_velocity = 0.f;
 
         for (const auto& meta : m_Modules) {
-            float rotationalOffset = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
+            float centerOffsetAngle = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
             float distanceToCenter = meta.CenterOffset.Length();
 
             // radians/s * m = m/s around arc
             float angularRotationVelocity = m_Request.velocity.angular_velocity * distanceToCenter;
-            float moduleRotation = rotationalOffset;
+            float moduleRotation = meta.RotationalOffset;
 
             if (m_Request.absolute) {
                 moduleRotation += m_Odometry.transform.rotation;
             }
 
-            static const float piOver2 = std::numbers::pi_v<float> / 2.f;
-            Vector2 perpendicular = meta.CenterOffset.Rotate(piOver2).Normalize();
-
-            // we want this rotated INVERSELY by the chassis rotation
+            // these vectors are in module space
             Vector2 relativeLinear = requestedLinearVelocity.Rotate(-moduleRotation);
-            Vector2 relativeAngular = { 0.f, angularRotationVelocity };
+            Vector2 relativeAngular = Vector2(0.f, angularRotationVelocity)
+                                          .Rotate(centerOffsetAngle - meta.RotationalOffset);
             Vector2 relativeVelocity = relativeLinear + relativeAngular;
 
             ModuleState target;
@@ -82,21 +80,21 @@ namespace pancake::swerve {
             meta.Module->Update();
 
             const auto& state = meta.Module->GetState();
-            float wheelAngle = rotationalOffset + state.WheelAngle;
+            float robotWheelAngle = meta.RotationalOffset + state.WheelAngle;
             float wheelAngularVelocity = state.WheelAngularVelocity;
             float moduleVelocityLength = wheelAngularVelocity * m_Config.WheelRadius;
 
-            Vector2 moduleVelocity;
-            moduleVelocity.X = moduleVelocityLength * std::cos(wheelAngle);
-            moduleVelocity.Y = moduleVelocityLength * std::sin(wheelAngle);
+            Vector2 robotModuleVelocity;
+            robotModuleVelocity.X = moduleVelocityLength * std::cos(robotWheelAngle);
+            robotModuleVelocity.Y = moduleVelocityLength * std::sin(robotWheelAngle);
 
-            auto absoluteModuleVelocity = moduleVelocity.Rotate(m_Odometry.transform.rotation);
-            float velocityDot = moduleVelocity.Dot(perpendicular);
+            auto absoluteModuleVelocity = robotModuleVelocity.Rotate(m_Odometry.transform.rotation);
 
             m_Odometry.velocity.x += absoluteModuleVelocity.X / m_Modules.size();
             m_Odometry.velocity.y += absoluteModuleVelocity.Y / m_Modules.size();
             m_Odometry.velocity.angular_velocity +=
-                velocityDot * distanceToCenter / m_Modules.size();
+                robotModuleVelocity.Dot(meta.CenterOffset.Rotate(std::numbers::pi_v<float> / 2.f)) /
+                m_Modules.size();
         }
 
         m_Odometry.transform.x += m_Odometry.velocity.x * delta.count();
@@ -107,6 +105,7 @@ namespace pancake::swerve {
     void Drivetrain::AddModule(const SwerveModuleDesc& desc) {
         SwerveModuleMeta meta;
         meta.CenterOffset = desc.CenterOffset;
+        meta.RotationalOffset = desc.RotationalOffset;
         meta.MotorIDs = { desc.Drive, desc.Rotation };
 
         std::vector<std::shared_ptr<rev::sim::SparkMaxSim>> handlers;
