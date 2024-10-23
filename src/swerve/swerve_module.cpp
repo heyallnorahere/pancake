@@ -37,7 +37,7 @@ namespace pancake::swerve {
 
         float desiredRotation = m_Target.WheelAngle / m_Rotation.GearRatio;
         float desiredVelocity =
-            m_Target.WheelAngularVelocity / m_Drive.GearRatio + wheelWellVelocity;
+            m_Target.WheelAngularVelocity / m_Drive.GearRatio - wheelWellVelocity;
 
         m_RotationController.SetSetpoint(desiredRotation);
         m_DriveController.SetSetpoint(desiredVelocity);
@@ -63,7 +63,7 @@ namespace pancake::swerve {
         float rotationPID = m_RotationController.Evaluate(rotationMotorPosition);
         float rotationFeedforward =
             m_RotationFeedforward.Evaluate(desiredRotation - rotationMotorPosition);
-            
+
         float rotationVoltage = rotationPID + rotationFeedforward;
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);
 
