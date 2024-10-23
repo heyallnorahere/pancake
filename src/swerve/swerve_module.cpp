@@ -11,7 +11,8 @@ namespace pancake::swerve {
                                const RotationEncoderConfig& encoderConfig)
         : m_Drive(drive), m_Rotation(rotation), m_DriveController(drive.Constants.Feedback),
           m_RotationController(rotation.Constants.Feedback),
-          m_DriveFeedforward(drive.Constants.Feedforward), m_EncoderConfig(encoderConfig) {
+          m_DriveFeedforward(drive.Constants.Feedforward),
+          m_RotationFeedforward(rotation.Constants.Feedforward), m_EncoderConfig(encoderConfig) {
         m_Target.WheelAngle = 0.f;
         m_Target.WheelAngularVelocity = 0.f;
 
@@ -48,21 +49,26 @@ namespace pancake::swerve {
 
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
-        // when using an absolute encoder, velocity has a different scale than position
-        // so we need to scale it with the gear ratios provided by the config
-        float encoderScale = 1.f / m_EncoderConfig.GearRatio;
+        float encoderPosition =
+            NormalizeAngle(m_DutyCycleEncoder->GetMotorPosition() / m_EncoderConfig.GearRatio);
+
+        float rotationMotorPosition = encoderPosition;
+        float wheelPosition = encoderPosition;
         if (m_EncoderConfig.Mode == RotationEncoderMode::Output) {
-            encoderScale /= m_Rotation.GearRatio;
+            rotationMotorPosition /= m_Rotation.GearRatio;
+        } else {
+            wheelPosition *= m_Rotation.GearRatio;
         }
 
-        float encoderPosition = m_DutyCycleEncoder->GetMotorPosition();
-        float rotationMotorPosition = NormalizeAngle(encoderPosition * encoderScale);
-        float rotationVoltage = m_RotationController.Evaluate(rotationMotorPosition);
-
+        float rotationPID = m_RotationController.Evaluate(rotationMotorPosition);
+        float rotationFeedforward =
+            m_RotationFeedforward.Evaluate(desiredRotation - rotationMotorPosition);
+            
+        float rotationVoltage = rotationPID + rotationFeedforward;
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
-        m_State.WheelAngle = rotationMotorPosition;
+        m_State.WheelAngle = wheelPosition;
 
         auto logger = rclcpp::get_logger("swerve");
         RCLCPP_INFO(logger, "Drive voltage: %f", driveVoltage);

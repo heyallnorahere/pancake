@@ -51,7 +51,7 @@ namespace pancake::swerve {
 
         SwerveMotor m_Drive, m_Rotation;
         PIDController<float> m_DriveController, m_RotationController;
-        Feedforward<float> m_DriveFeedforward;
+        Feedforward<float> m_DriveFeedforward, m_RotationFeedforward;
         RotationEncoderConfig m_EncoderConfig;
 
         std::shared_ptr<rev::Encoder> m_DriveEncoder;
