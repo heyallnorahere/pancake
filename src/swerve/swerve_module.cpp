@@ -22,10 +22,14 @@ namespace pancake::swerve {
             std::make_shared<rev::Encoder>(m_Rotation.Motor, rev::EncoderMode::DutyCycle);
     }
 
+    static float Signum(float x) {
+        return x > 0.f ? 1.f : -1.f;
+    }
+
     static float NormalizeAngle(float angle) {
         const float pi = std::numbers::pi_v<float>;
         while (std::abs(angle) > pi) {
-            angle -= pi * 2.f * (angle > 0.f ? 1.f : -1.f);
+            angle -= pi * 2.f * Signum(angle);
         }
 
         return angle;
@@ -69,14 +73,16 @@ namespace pancake::swerve {
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
         m_State.WheelAngle = wheelPosition;
-
-        auto logger = rclcpp::get_logger("swerve");
-        RCLCPP_INFO(logger, "Drive voltage: %f", driveVoltage);
-        RCLCPP_INFO(logger, "Rotation voltage: %f", rotationVoltage);
     }
 
     void SwerveModule::SetTarget(const ModuleState& target) {
         m_Target = target;
         m_Target.WheelAngle = NormalizeAngle(m_Target.WheelAngle);
+
+        const float pi = std::numbers::pi_v<float>;
+        if (std::abs(m_Target.WheelAngle) > pi / 2.f) {
+            m_Target.WheelAngle -= pi * Signum(m_Target.WheelAngle);
+            m_Target.WheelAngularVelocity *= -1.f;
+        }
     }
 } // namespace pancake::swerve
