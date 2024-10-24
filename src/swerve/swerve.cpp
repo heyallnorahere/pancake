@@ -5,6 +5,8 @@
 #include <chrono>
 #include <string>
 
+#include <rclcpp/serialization.hpp>
+
 using namespace std::chrono_literals;
 
 namespace pancake {
@@ -53,8 +55,7 @@ namespace pancake::swerve {
     }
 
     static const std::unordered_map<std::string, RotationEncoderMode> s_ModeMap = {
-        { "Motor", RotationEncoderMode::Motor },
-        { "Output", RotationEncoderMode::Output }
+        { "Motor", RotationEncoderMode::Motor }, { "Output", RotationEncoderMode::Output }
     };
 
     void from_json(const nlohmann::json& src, RotationEncoderConfig& dst) {
@@ -162,22 +163,36 @@ namespace pancake::swerve {
             auto modulePath = "/pancake/swerve/module/mod" + std::to_string(i);
 
             ModuleTelemetry telemetry;
-            telemetry.Target = create_publisher<pancake::msg::ModuleState>(modulePath + "/target", 10);
-            telemetry.State = create_publisher<pancake::msg::ModuleState>(modulePath + "/state", 10);
-            
+            telemetry.Target =
+                create_generic_publisher(modulePath + "/target", "pancake/ModuleState", 10);
+            telemetry.State =
+                create_generic_publisher(modulePath + "/state", "pancake/ModuleState", 10);
+
             m_ModuleTelemetry.push_back(telemetry);
         }
 
-        m_RequestSubscriber = create_subscription<pancake::msg::SwerveRequest>(
-            "/pancake/swerve/request", 10,
-            std::bind(&Drivetrain::SetRequest, m_Drivetrain.get(), std::placeholders::_1));
+        m_RequestSubscriber = create_generic_subscription(
+            "/pancake/swerve/request", "pancake/SwerveRequest", 10,
+            [&](std::shared_ptr<rclcpp::SerializedMessage> message) {
+                rclcpp::Serialization<pancake::msg::SwerveRequest> serialization;
+                pancake::msg::SwerveRequest request;
+                serialization.deserialize_message(message.get(), &request);
+
+                m_Drivetrain->SetRequest(request);
+            });
 
         m_OdometryPublisher =
-            create_publisher<pancake::msg::OdometryState>("/pancake/odometry/state", 10);
+            create_generic_publisher("/pancake/odometry/state", "pancake/OdometryState", 10);
 
-        m_ResetSubscriber = create_subscription<pancake::msg::OdometryState>(
-            "/pancake/odometry/reset", 10,
-            std::bind(&Drivetrain::ResetOdometry, m_Drivetrain.get(), std::placeholders::_1));
+        m_ResetSubscriber = create_generic_subscription(
+            "/pancake/odometry/reset", "pancake/OdometryState", 10,
+            [&](std::shared_ptr<rclcpp::SerializedMessage> message) {
+                rclcpp::Serialization<pancake::msg::OdometryState> serialization;
+                pancake::msg::OdometryState state;
+                serialization.deserialize_message(message.get(), &state);
+
+                m_Drivetrain->ResetOdometry(state);
+            });
 
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
@@ -186,12 +201,21 @@ namespace pancake::swerve {
     void Swerve::Update() {
         auto now = std::chrono::high_resolution_clock::now();
         auto delta = now - m_LastUpdate.value_or(now);
+
         m_LastUpdate = now;
-
         m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
-        m_OdometryPublisher->publish(m_Drivetrain->GetOdometry());
 
+        rclcpp::Serialization<pancake::msg::OdometryState> odometrySerialization;
+        rclcpp::SerializedMessage odometryMessage;
+
+        const auto& odometry = m_Drivetrain->GetOdometry();
+        odometrySerialization.serialize_message(&odometry, &odometryMessage);
+
+        m_OdometryPublisher->publish(odometryMessage);
+
+        rclcpp::Serialization<pancake::msg::ModuleState> stateSerialization;
         const auto& modules = m_Drivetrain->GetModules();
+
         for (size_t i = 0; i < modules.size(); i++) {
             const auto& module = modules[i].Module;
             const auto& telemetry = m_ModuleTelemetry[i];
@@ -206,8 +230,12 @@ namespace pancake::swerve {
             sentTarget.angle = target.WheelAngle;
             sentTarget.wheel_angular_velocity = target.WheelAngularVelocity;
 
-            telemetry.State->publish(sentState);
-            telemetry.Target->publish(sentTarget);
+            rclcpp::SerializedMessage stateMessage, targetMessage;
+            stateSerialization.serialize_message(&sentState, &stateMessage);
+            stateSerialization.serialize_message(&sentTarget, &targetMessage);
+
+            telemetry.State->publish(stateMessage);
+            telemetry.Target->publish(targetMessage);
         }
     }
 }; // namespace pancake::swerve

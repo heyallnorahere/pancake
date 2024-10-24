@@ -10,7 +10,7 @@
 
 namespace pancake::swerve {
     struct ModuleTelemetry {
-        rclcpp::Publisher<pancake::msg::ModuleState>::SharedPtr Target, State;
+        rclcpp::GenericPublisher::SharedPtr Target, State;
     };
 
     class Swerve : public rclcpp::Node {
@@ -26,9 +26,9 @@ namespace pancake::swerve {
 
         std::shared_ptr<Drivetrain> m_Drivetrain;
 
-        rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
-        rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;
-        rclcpp::Publisher<pancake::msg::OdometryState>::SharedPtr m_OdometryPublisher;
+        rclcpp::GenericSubscription::SharedPtr m_RequestSubscriber;
+        rclcpp::GenericSubscription::SharedPtr m_ResetSubscriber;
+        rclcpp::GenericPublisher::SharedPtr m_OdometryPublisher;
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::optional<std::chrono::high_resolution_clock::time_point> m_LastUpdate;

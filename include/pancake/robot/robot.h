@@ -22,13 +22,14 @@ namespace pancake::robot {
         void InputReceived(const pancake::msg::Input& input);
 
     private:
+        void InputMessageReceived(std::shared_ptr<rclcpp::SerializedMessage> message);
         void ProcessInput();
         
         void Update();
         void UpdateInput();
 
-        rclcpp::Publisher<pancake::msg::SwerveRequest>::SharedPtr m_RequestPublisher;
-        rclcpp::Subscription<pancake::msg::Input>::SharedPtr m_InputSubscriber;
+        rclcpp::GenericPublisher::SharedPtr m_RequestPublisher;
+        rclcpp::GenericSubscription::SharedPtr m_InputSubscriber;
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
     };
 } // namespace pancake::robot

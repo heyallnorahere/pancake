@@ -5,6 +5,8 @@
 #include <chrono>
 #include <numbers>
 
+#include <rclcpp/serialization.hpp>
+
 using namespace std::chrono_literals;
 
 namespace pancake::robot {
@@ -53,11 +55,11 @@ namespace pancake::robot {
 
     Robot::Robot() : Node("robot") {
         m_RequestPublisher =
-            create_publisher<pancake::msg::SwerveRequest>("/pancake/swerve/request", 10);
+            create_generic_publisher("/pancake/swerve/request", "pancake/SwerveRequest", 10);
 
-        m_InputSubscriber = create_subscription<pancake::msg::Input>(
-            "/pancake/client/control", 10,
-            std::bind(&Robot::InputReceived, this, std::placeholders::_1));
+        m_InputSubscriber = create_generic_subscription(
+            "/pancake/client/control", "pancake/Input", 10,
+            std::bind(&Robot::InputMessageReceived, this, std::placeholders::_1));
 
         m_UpdateTimer = create_wall_timer(30ms, std::bind(&Robot::Update, this));
     }
@@ -73,6 +75,15 @@ namespace pancake::robot {
         state.Pressed = input.pressed;
 
         ProcessInput();
+    }
+
+    void Robot::InputMessageReceived(std::shared_ptr<rclcpp::SerializedMessage> message) {
+        rclcpp::Serialization<pancake::msg::Input> serialization;
+
+        pancake::msg::Input input;
+        serialization.deserialize_message(message.get(), &input);
+
+        InputReceived(input);
     }
 
     void Robot::ProcessInput() {
@@ -102,7 +113,12 @@ namespace pancake::robot {
         request.velocity.y = linear.Y;
         request.velocity.angular_velocity = angular;
         request.absolute = true;
-        m_RequestPublisher->publish(request);
+
+        rclcpp::Serialization<pancake::msg::SwerveRequest> serialization;
+        rclcpp::SerializedMessage message;
+        serialization.serialize_message(&request, &message);
+
+        m_RequestPublisher->publish(message);
     }
 
     void Robot::Update() { UpdateInput(); }

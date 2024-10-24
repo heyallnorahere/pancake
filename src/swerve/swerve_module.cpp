@@ -47,7 +47,7 @@ namespace pancake::swerve {
         m_DriveController.SetSetpoint(desiredVelocity);
 
         float driveMotorVelocity = m_DriveEncoder->GetMotorVelocity();
-        float driveFeedforward = std::abs(m_DriveFeedforward.Evaluate(desiredVelocity));
+        float driveFeedforward = m_DriveFeedforward.Evaluate(desiredVelocity);
         float drivePID = m_DriveController.Evaluate(driveMotorVelocity);
         float driveVoltage = drivePID + driveFeedforward;
 
@@ -80,7 +80,7 @@ namespace pancake::swerve {
         m_Target.WheelAngle = NormalizeAngle(m_Target.WheelAngle);
 
         const float pi = std::numbers::pi_v<float>;
-        if (std::abs(m_Target.WheelAngle) > pi / 2.f) {
+        if (std::abs(m_Target.WheelAngle - m_State.WheelAngle) > pi / 2.f) {
             m_Target.WheelAngle -= pi * Signum(m_Target.WheelAngle);
             m_Target.WheelAngularVelocity *= -1.f;
         }

@@ -43,7 +43,7 @@ TEST(pancake, module_test) {
     float requestedAngular = request.velocity.angular_velocity;
 
     pancake::swerve::Drivetrain::Config config;
-    config.Modules.push_back({ 1, 2, { 1.f, 1.f } });
+    config.Modules.push_back({ 1, 2, { 1.f, 1.f }, std::numbers::pi_v<float> / 4.f });
 
     pancake::swerve::Drivetrain swerve({}, true);
     swerve.SetRequest(request);
