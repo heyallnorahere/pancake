@@ -22,9 +22,7 @@ namespace pancake::swerve {
             std::make_shared<rev::Encoder>(m_Rotation.Motor, rev::EncoderMode::DutyCycle);
     }
 
-    static float Signum(float x) {
-        return x > 0.f ? 1.f : -1.f;
-    }
+    static float Signum(float x) { return x > 0.f ? 1.f : -1.f; }
 
     static float NormalizeAngle(float angle) {
         const float pi = std::numbers::pi_v<float>;
@@ -80,7 +78,8 @@ namespace pancake::swerve {
         m_Target.WheelAngle = NormalizeAngle(m_Target.WheelAngle);
 
         const float pi = std::numbers::pi_v<float>;
-        if (std::abs(m_Target.WheelAngle - m_State.WheelAngle) > pi / 2.f) {
+        float angleDifference = NormalizeAngle(m_Target.WheelAngle - m_State.WheelAngle);
+        if (std::abs(angleDifference) > pi / 2.f) {
             m_Target.WheelAngle -= pi * Signum(m_Target.WheelAngle);
             m_Target.WheelAngularVelocity *= -1.f;
         }
