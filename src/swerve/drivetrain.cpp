@@ -72,8 +72,11 @@ namespace pancake::swerve {
                                           .Rotate(centerOffsetAngle - meta.RotationalOffset);
             Vector2 relativeVelocity = relativeLinear + relativeAngular;
 
+            auto time = std::chrono::system_clock::now().time_since_epoch();
+            auto seconds = std::chrono::duration_cast<std::chrono::duration<float>>(time);
+
             ModuleState target;
-            target.WheelAngle = std::atan2(relativeVelocity.Y, relativeVelocity.X);
+            target.WheelAngle = /*std::atan2(relativeVelocity.Y, relativeVelocity.X)*/ seconds.count() * std::numbers::pi_v<float> / 2.f;
             target.WheelAngularVelocity = relativeVelocity.Length() / m_Config.WheelRadius;
 
             meta.Module->SetTarget(target);
