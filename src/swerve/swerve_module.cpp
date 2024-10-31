@@ -84,4 +84,13 @@ namespace pancake::swerve {
             m_Target.WheelAngularVelocity *= -1.f;
         }
     }
+
+    void SwerveModule::Retune(const MotorConstants<float>& drive,
+                              const MotorConstants<float>& rotation) {
+        m_DriveController.GetPID() = drive.Feedback;
+        m_DriveFeedforward.GetSVA() = drive.Feedforward;
+
+        m_RotationController.GetPID() = rotation.Feedback;
+        m_RotationFeedforward.GetSVA() = rotation.Feedforward;
+    }
 } // namespace pancake::swerve

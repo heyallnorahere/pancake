@@ -28,8 +28,8 @@ namespace pancake::robot {
         void Update();
         void UpdateInput();
 
-        rclcpp::GenericPublisher::SharedPtr m_RequestPublisher;
-        rclcpp::GenericSubscription::SharedPtr m_InputSubscriber;
+        rclcpp::Publisher<pancake::msg::SwerveRequest>::SharedPtr m_RequestPublisher;
+        rclcpp::Subscription<pancake::msg::Input>::SharedPtr m_InputSubscriber;
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
     };
 } // namespace pancake::robot

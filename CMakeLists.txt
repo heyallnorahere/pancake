@@ -18,6 +18,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OdometryState.msg"
   "msg/SwerveRequest.msg"
   "msg/ModuleState.msg"
+  "msg/PID.msg"
+  "msg/SVA.msg"
+  "srv/PIDSVA.srv"
 )
 
 rosidl_get_typesupport_target(CPP_TYPESUPPORT_TARGET

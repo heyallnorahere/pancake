@@ -46,6 +46,8 @@ namespace pancake::swerve {
         const ModuleState& GetState() const { return m_State; }
         const ModuleState& GetTarget() const { return m_Target; }
 
+        void Retune(const MotorConstants<float>& drive, const MotorConstants<float>& rotation);
+
     private:
         ModuleState m_State, m_Target;
 

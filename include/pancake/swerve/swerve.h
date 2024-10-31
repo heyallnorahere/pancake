@@ -2,7 +2,11 @@
 #include <rclcpp/node.hpp>
 
 #include "pancake/swerve/drivetrain.h"
+#include "pancake/msg/odometry_state.hpp"
 #include "pancake/msg/module_state.hpp"
+#include "pancake/msg/swerve_request.hpp"
+
+#include "pancake/srv/pidsva.hpp"
 
 #include <memory>
 #include <chrono>
@@ -10,7 +14,7 @@
 
 namespace pancake::swerve {
     struct ModuleTelemetry {
-        rclcpp::GenericPublisher::SharedPtr Target, State;
+        rclcpp::Publisher<pancake::msg::ModuleState>::SharedPtr Target, State;
     };
 
     class Swerve : public rclcpp::Node {
@@ -24,11 +28,20 @@ namespace pancake::swerve {
     private:
         void Update();
 
+        rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr CreateModuleGainService(
+            const std::string& path, MotorConstants<float>* constants);
+
+        void ModuleGains(MotorConstants<float>* constants,
+                         std::shared_ptr<pancake::srv::PIDSVA_Request> request,
+                         std::shared_ptr<pancake::srv::PIDSVA_Response> response);
+
         std::shared_ptr<Drivetrain> m_Drivetrain;
 
-        rclcpp::GenericSubscription::SharedPtr m_RequestSubscriber;
-        rclcpp::GenericSubscription::SharedPtr m_ResetSubscriber;
-        rclcpp::GenericPublisher::SharedPtr m_OdometryPublisher;
+        rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
+        rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;
+        rclcpp::Publisher<pancake::msg::OdometryState>::SharedPtr m_OdometryPublisher;
+
+        rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr m_DriveTuning, m_RotationTuning;
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::optional<std::chrono::high_resolution_clock::time_point> m_LastUpdate;

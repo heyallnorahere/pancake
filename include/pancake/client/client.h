@@ -7,6 +7,7 @@
 
 // no SDL header in client.h
 struct SDL_Window;
+struct SDL_Renderer;
 struct SDL_GamepadButtonEvent;
 struct SDL_GamepadAxisEvent;
 struct SDL_Gamepad;
@@ -44,6 +45,7 @@ namespace pancake::client {
         void SendAxis(const SDL_GamepadAxisEvent& event);
 
         SDL_Window* m_Window;
+        SDL_Renderer* m_Renderer;
         std::unordered_map<uint32_t, SDL_Gamepad*> m_Gamepads;
         bool m_SDLInitialized;
 

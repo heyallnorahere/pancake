@@ -10,6 +10,10 @@
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_sdl3.h>
+#include <backends/imgui_impl_sdlrenderer3.h>
+
 using namespace std::chrono_literals;
 
 namespace pancake::client {
@@ -64,9 +68,12 @@ namespace pancake::client {
         return {};
     }
 
-    Client::Client() : Node("client"), m_Window(nullptr), m_SDLInitialized(false) {
+    Client::Client()
+        : Node("client"), m_Window(nullptr), m_Renderer(nullptr), m_SDLInitialized(false) {
         static constexpr uint32_t desiredFPS = 60;
         static constexpr std::chrono::duration<double> interval = 1s / desiredFPS;
+        static constexpr uint32_t flags =
+            SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
 
         SDL_SetHint("SDL_HINT_JOYSTICK_THREAD", "1");
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) != 0) {
@@ -74,15 +81,32 @@ namespace pancake::client {
             return;
         }
 
-        m_Window = SDL_CreateWindow("Pancake swerve client", 1600, 900, SDL_WINDOW_RESIZABLE);
+        m_Window = SDL_CreateWindow("Pancake swerve client", 1600, 900, flags);
+        m_Renderer = SDL_CreateRenderer(m_Window, nullptr);
         m_SDLInitialized = true;
+
+        SDL_SetRenderVSync(m_Renderer, SDL_TRUE);
+        SDL_ShowWindow(m_Window);
 
         m_Publisher = create_publisher<pancake::msg::Input>("/pancake/client/control", 10);
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplSDL3_InitForSDLRenderer(m_Window, m_Renderer);
+        ImGui_ImplSDLRenderer3_Init(m_Renderer);
     }
 
     Client::~Client() {
+        if (m_SDLInitialized) {
+            ImGui_ImplSDLRenderer3_Shutdown();
+            ImGui_ImplSDL3_Shutdown();
+            ImGui::DestroyContext();
+        }
+
         if (m_Window != nullptr) {
             SDL_DestroyWindow(m_Window);
         }
@@ -101,6 +125,8 @@ namespace pancake::client {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL3_ProcessEvent(&event);
+
             switch (event.type) {
             case SDL_EVENT_QUIT:
                 rclcpp::shutdown();
@@ -125,6 +151,23 @@ namespace pancake::client {
                 break;
             }
         }
+
+        ImGui_ImplSDLRenderer3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+
+        static bool showDemoWindow = true;
+        if (showDemoWindow) {
+            ImGui::ShowDemoWindow(&showDemoWindow);
+        }
+
+        SDL_SetRenderDrawColorFloat(m_Renderer, 0.f, 0.f, 0.f, 1.f);
+        SDL_RenderClear(m_Renderer);
+
+        ImGui::Render();
+        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
+
+        SDL_RenderPresent(m_Renderer);
     }
 
     void Client::SendButton(const SDL_GamepadButtonEvent& event) {

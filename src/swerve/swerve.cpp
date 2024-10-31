@@ -164,16 +164,15 @@ namespace pancake::swerve {
 
             ModuleTelemetry telemetry;
             telemetry.Target =
-                create_generic_publisher(modulePath + "/target", "pancake/ModuleState", 10);
+                create_publisher<pancake::msg::ModuleState>(modulePath + "/target", 10);
             telemetry.State =
-                create_generic_publisher(modulePath + "/state", "pancake/ModuleState", 10);
+                create_publisher<pancake::msg::ModuleState>(modulePath + "/state", 10);
 
             m_ModuleTelemetry.push_back(telemetry);
         }
 
-        m_RequestSubscriber = create_generic_subscription(
-            "/pancake/swerve/request", "pancake/SwerveRequest", 10,
-            [&](std::shared_ptr<rclcpp::SerializedMessage> message) {
+        m_RequestSubscriber = create_subscription<pancake::msg::SwerveRequest>(
+            "/pancake/swerve/request", 10, [&](std::shared_ptr<rclcpp::SerializedMessage> message) {
                 rclcpp::Serialization<pancake::msg::SwerveRequest> serialization;
                 pancake::msg::SwerveRequest request;
                 serialization.deserialize_message(message.get(), &request);
@@ -182,17 +181,18 @@ namespace pancake::swerve {
             });
 
         m_OdometryPublisher =
-            create_generic_publisher("/pancake/odometry/state", "pancake/OdometryState", 10);
+            create_publisher<pancake::msg::OdometryState>("/pancake/odometry/state", 10);
 
-        m_ResetSubscriber = create_generic_subscription(
-            "/pancake/odometry/reset", "pancake/OdometryState", 10,
-            [&](std::shared_ptr<rclcpp::SerializedMessage> message) {
-                rclcpp::Serialization<pancake::msg::OdometryState> serialization;
-                pancake::msg::OdometryState state;
-                serialization.deserialize_message(message.get(), &state);
+        m_ResetSubscriber = create_subscription<pancake::msg::OdometryState>(
+            "/pancake/odometry/reset", 10,
+            std::bind(&Drivetrain::ResetOdometry, m_Drivetrain.get(), std::placeholders::_1));
 
-                m_Drivetrain->ResetOdometry(state);
-            });
+        auto& drivetrainConfig = m_Drivetrain->GetConfig();
+        m_DriveTuning = CreateModuleGainService("/pancake/config/drive/gains",
+                                                &drivetrainConfig.Drive.Constants);
+
+        m_RotationTuning = CreateModuleGainService("/pancake/config/rotation/gains",
+                                                   &drivetrainConfig.Rotation.Constants);
 
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
@@ -205,17 +205,10 @@ namespace pancake::swerve {
         m_LastUpdate = now;
         m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
 
-        rclcpp::Serialization<pancake::msg::OdometryState> odometrySerialization;
-        rclcpp::SerializedMessage odometryMessage;
-
         const auto& odometry = m_Drivetrain->GetOdometry();
-        odometrySerialization.serialize_message(&odometry, &odometryMessage);
+        m_OdometryPublisher->publish(odometry);
 
-        m_OdometryPublisher->publish(odometryMessage);
-
-        rclcpp::Serialization<pancake::msg::ModuleState> stateSerialization;
         const auto& modules = m_Drivetrain->GetModules();
-
         for (size_t i = 0; i < modules.size(); i++) {
             const auto& module = modules[i].Module;
             const auto& telemetry = m_ModuleTelemetry[i];
@@ -230,12 +223,49 @@ namespace pancake::swerve {
             sentTarget.angle = target.WheelAngle;
             sentTarget.wheel_angular_velocity = target.WheelAngularVelocity;
 
-            rclcpp::SerializedMessage stateMessage, targetMessage;
-            stateSerialization.serialize_message(&sentState, &stateMessage);
-            stateSerialization.serialize_message(&sentTarget, &targetMessage);
+            telemetry.State->publish(sentState);
+            telemetry.Target->publish(sentTarget);
+        }
+    }
 
-            telemetry.State->publish(stateMessage);
-            telemetry.Target->publish(targetMessage);
+    rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr Swerve::CreateModuleGainService(
+        const std::string& path, MotorConstants<float>* constants) {
+        auto callback = std::bind(&Swerve::ModuleGains, this, constants, std::placeholders::_1,
+                                  std::placeholders::_2);
+
+        return create_service<pancake::srv::PIDSVA>(path, callback, 10);
+    }
+
+    void Swerve::ModuleGains(MotorConstants<float>* constants,
+                             std::shared_ptr<pancake::srv::PIDSVA_Request> request,
+                             std::shared_ptr<pancake::srv::PIDSVA_Response> response) {
+        if (request->set) {
+            constants->Feedforward.Sign = request->sva.s;
+            constants->Feedforward.Velocity = request->sva.v;
+            constants->Feedforward.Acceleration = request->sva.a;
+
+            constants->Feedback.Proportional = request->pid.p;
+            constants->Feedback.Integral = request->pid.i;
+            constants->Feedback.Derivative = request->pid.d;
+
+            const auto& modules = m_Drivetrain->GetModules();
+            const auto& config = m_Drivetrain->GetConfig();
+
+            for (const auto& module : modules) {
+                module.Module->Retune(config.Drive.Constants, config.Rotation.Constants);
+            }
+
+            response->pid = request->pid;
+            response->sva = request->sva;
+            response->ack = true;
+        } else {
+            response->sva.s = constants->Feedforward.Sign;
+            response->sva.v = constants->Feedforward.Velocity;
+            response->sva.a = constants->Feedforward.Acceleration;
+
+            response->pid.p = constants->Feedback.Proportional;
+            response->pid.i = constants->Feedback.Integral;
+            response->pid.d = constants->Feedback.Derivative;
         }
     }
 }; // namespace pancake::swerve

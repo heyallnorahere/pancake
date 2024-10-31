@@ -58,6 +58,9 @@ namespace pancake::swerve {
 
         float GetWheelRadius() const { return m_Config.WheelRadius; }
 
+        Config& GetConfig() { return m_Config; }
+        const Config& GetConfig() const { return m_Config; }
+
     private:
         void AddModule(const SwerveModuleDesc& desc);
 

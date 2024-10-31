@@ -55,11 +55,11 @@ namespace pancake::robot {
 
     Robot::Robot() : Node("robot") {
         m_RequestPublisher =
-            create_generic_publisher("/pancake/swerve/request", "pancake/SwerveRequest", 10);
+            create_publisher<pancake::msg::SwerveRequest>("/pancake/swerve/request", 10);
 
-        m_InputSubscriber = create_generic_subscription(
-            "/pancake/client/control", "pancake/Input", 10,
-            std::bind(&Robot::InputMessageReceived, this, std::placeholders::_1));
+        m_InputSubscriber = create_subscription<pancake::msg::Input>(
+            "/pancake/client/control", 10,
+            std::bind(&Robot::InputReceived, this, std::placeholders::_1));
 
         m_UpdateTimer = create_wall_timer(30ms, std::bind(&Robot::Update, this));
     }
