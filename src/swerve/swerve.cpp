@@ -198,17 +198,15 @@ namespace pancake::swerve {
     }
 
     void Swerve::Update() {
-        static auto lastLog = std::chrono::system_clock::now();
-        auto now = std::chrono::system_clock::now();
+        static auto lastLog = std::chrono::high_resolution_clock::now();
+        auto now = std::chrono::high_resolution_clock::now();
 
         if (now - lastLog > 1s) {
             RCLCPP_INFO(get_logger(), "Swerve node is alive");
             lastLog = now;
         }
 
-        auto now = std::chrono::high_resolution_clock::now();
         auto delta = now - m_LastUpdate.value_or(now);
-
         m_LastUpdate = now;
         m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
 
