@@ -8,6 +8,7 @@ LABEL org.opencontainers.image.licenses=Apache-2.0
 WORKDIR /app
 COPY vendor vendor
 COPY msg msg
+COPY srv srv
 COPY launch launch
 COPY package.xml CMakeLists.txt launch.sh ./
 COPY include include

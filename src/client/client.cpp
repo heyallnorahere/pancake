@@ -1,6 +1,6 @@
-#include <rclcpp/rclcpp.hpp>
-
 #include "pancake/client/client.h"
+
+#include "pancake/client/tuner.h"
 
 #include <chrono>
 #include <unordered_map>
@@ -98,6 +98,8 @@ namespace pancake::client {
 
         ImGui_ImplSDL3_InitForSDLRenderer(m_Window, m_Renderer);
         ImGui_ImplSDLRenderer3_Init(m_Renderer);
+
+        AddView<Tuner>(this);
     }
 
     Client::~Client() {
@@ -119,10 +121,6 @@ namespace pancake::client {
     }
 
     void Client::Update() {
-        if (!SDL_HasGamepad()) {
-            RCLCPP_WARN(get_logger(), "No controller connected! Cannot control robot");
-        }
-
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
@@ -156,9 +154,8 @@ namespace pancake::client {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        static bool showDemoWindow = true;
-        if (showDemoWindow) {
-            ImGui::ShowDemoWindow(&showDemoWindow);
+        for (const auto& [id, view] : m_Views) {
+            view->Update();
         }
 
         SDL_SetRenderDrawColorFloat(m_Renderer, 0.f, 0.f, 0.f, 1.f);
