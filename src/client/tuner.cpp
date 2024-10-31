@@ -31,6 +31,7 @@ namespace pancake::client {
                 }
             }
         } catch (const std::runtime_error& exc) {
+            RCLCPP_ERROR(rclcpp::get_logger("client"), "Caught error: %s", exc.what());
             ImGui::End();
             return;
         }
@@ -97,27 +98,24 @@ namespace pancake::client {
         data.Path = path;
         data.Client = m_Node->create_client<pancake::srv::PIDSVA>(path, 10);
 
-        auto request = std::make_shared<pancake::srv::PIDSVA_Request>();
-        request->set = false;
-
-        auto future = data.Client->async_send_request(request);
-        future.wait();
-
-        if (!future.valid()) {
-            return {};
-        }
-
-        auto response = future.get();
-        if (!response->ack) {
-            return {};
-        }
-
-        data.PID = response->pid;
-        data.SVA = response->sva;
-
         size_t index = m_Clients.size();
         m_Clients.push_back(data);
 
+        std::thread futureThread([this, index]() mutable {
+            auto request = std::make_shared<pancake::srv::PIDSVA_Request>();
+            request->set = false;
+
+            auto& client = m_Clients[index];
+            auto future = client.Client->async_send_request(request);
+
+            future.wait();
+            auto response = future.get();
+
+            client.PID = response->pid;
+            client.SVA = response->sva;
+        });
+
+        futureThread.detach();
         return index;
     }
 

@@ -5,7 +5,7 @@
 #include <chrono>
 #include <string>
 
-#include <rclcpp/serialization.hpp>
+#include <librevfree/CanBus.h>
 
 using namespace std::chrono_literals;
 
@@ -152,11 +152,15 @@ namespace pancake::swerve {
         config.EncoderConfig.Mode = RotationEncoderMode::Output;
         config.EncoderConfig.GearRatio = 1.f;
 
-        if (!LoadConfig(get_name(), config)) {
+        bool sim = false;
+        auto bus = rev::CanBus::Get(config.Network);
+        sim |= !bus->IsOpen();
+
+        if (!LoadConfig(get_name(), config) && !sim) {
             SaveConfig(get_name(), config);
         }
 
-        m_Drivetrain = std::make_shared<Drivetrain>(config, false);
+        m_Drivetrain = std::make_shared<Drivetrain>(config, sim);
 
         const auto& modules = m_Drivetrain->GetModules();
         for (size_t i = 0; i < modules.size(); i++) {
@@ -172,13 +176,8 @@ namespace pancake::swerve {
         }
 
         m_RequestSubscriber = create_subscription<pancake::msg::SwerveRequest>(
-            "/pancake/swerve/request", 10, [&](std::shared_ptr<rclcpp::SerializedMessage> message) {
-                rclcpp::Serialization<pancake::msg::SwerveRequest> serialization;
-                pancake::msg::SwerveRequest request;
-                serialization.deserialize_message(message.get(), &request);
-
-                m_Drivetrain->SetRequest(request);
-            });
+            "/pancake/swerve/request", 10,
+            std::bind(&Drivetrain::SetRequest, m_Drivetrain.get(), std::placeholders::_1));
 
         m_OdometryPublisher =
             create_publisher<pancake::msg::OdometryState>("/pancake/odometry/state", 10);
@@ -240,13 +239,23 @@ namespace pancake::swerve {
                              std::shared_ptr<pancake::srv::PIDSVA_Request> request,
                              std::shared_ptr<pancake::srv::PIDSVA_Response> response) {
         if (request->set) {
+            RCLCPP_INFO(get_logger(), "Setting gains:");
+
             constants->Feedforward.Sign = request->sva.s;
             constants->Feedforward.Velocity = request->sva.v;
             constants->Feedforward.Acceleration = request->sva.a;
 
+            RCLCPP_INFO(get_logger(), "S: %f", request->sva.s);
+            RCLCPP_INFO(get_logger(), "V: %f", request->sva.v);
+            RCLCPP_INFO(get_logger(), "A: %f", request->sva.a);
+
             constants->Feedback.Proportional = request->pid.p;
             constants->Feedback.Integral = request->pid.i;
             constants->Feedback.Derivative = request->pid.d;
+
+            RCLCPP_INFO(get_logger(), "P: %f", request->pid.p);
+            RCLCPP_INFO(get_logger(), "I: %f", request->pid.i);
+            RCLCPP_INFO(get_logger(), "D: %f", request->pid.d);
 
             const auto& modules = m_Drivetrain->GetModules();
             const auto& config = m_Drivetrain->GetConfig();
@@ -259,6 +268,8 @@ namespace pancake::swerve {
             response->sva = request->sva;
             response->ack = true;
         } else {
+            RCLCPP_INFO(get_logger(), "Returning constants");
+
             response->sva.s = constants->Feedforward.Sign;
             response->sva.v = constants->Feedforward.Velocity;
             response->sva.a = constants->Feedforward.Acceleration;
