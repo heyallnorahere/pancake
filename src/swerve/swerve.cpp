@@ -186,12 +186,14 @@ namespace pancake::swerve {
             "/pancake/odometry/reset", 10,
             std::bind(&Drivetrain::ResetOdometry, m_Drivetrain.get(), std::placeholders::_1));
 
+        /* freezes node
         auto& drivetrainConfig = m_Drivetrain->GetConfig();
         m_DriveTuning = CreateModuleGainService("/pancake/config/drive/gains",
                                                 &drivetrainConfig.Drive.Constants);
 
         m_RotationTuning = CreateModuleGainService("/pancake/config/rotation/gains",
                                                    &drivetrainConfig.Rotation.Constants);
+        */
 
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));

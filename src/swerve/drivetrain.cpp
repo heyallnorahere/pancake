@@ -76,7 +76,7 @@ namespace pancake::swerve {
             auto seconds = std::chrono::duration_cast<std::chrono::duration<float>>(time);
 
             ModuleState target;
-            target.WheelAngle = /*std::atan2(relativeVelocity.Y, relativeVelocity.X)*/ seconds.count() * std::numbers::pi_v<float> / 2.f;
+            target.WheelAngle = std::atan2(relativeVelocity.Y, relativeVelocity.X);
             target.WheelAngularVelocity = relativeVelocity.Length() / m_Config.WheelRadius;
 
             meta.Module->SetTarget(target);
