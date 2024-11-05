@@ -2,12 +2,6 @@
 #include "pancake/client/view.h"
 
 #include "pancake/vector2.h"
-#include "pancake/msg/module_state.hpp"
-#include "pancake/msg/odometry_state.hpp"
-#include "pancake/msg/robot_transform.hpp"
-#include "pancake/msg/drivetrain_meta.hpp"
-
-#include <rclcpp/node.hpp>
 
 namespace pancake::client {
     struct ModuleInfo {
@@ -35,7 +29,13 @@ namespace pancake::client {
         rclcpp::Node* m_Node;
         float m_WheelRadius;
 
+        bool m_RecomputeBounds;
+        pancake::Vector2 m_TopRight, m_BottomLeft;
+
+        pancake::msg::OdometryState m_Odometry;
         std::vector<ModuleInfo> m_Modules;
+
         rclcpp::Subscription<pancake::msg::DrivetrainMeta>::SharedPtr m_MetaSubscriber;
+        rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_OdometrySubscriber;
     };
 } // namespace pancake::client

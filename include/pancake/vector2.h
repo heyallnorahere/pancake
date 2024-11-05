@@ -26,6 +26,12 @@ namespace pancake {
 
             return result;
         }
+
+#ifdef IMGUI_VERSION
+        inline operator ImVec2() const {
+            return { X, Y };
+        }
+#endif
     };
 
     inline Vector2 operator+(const Vector2& lhs, const Vector2& rhs) {
@@ -43,7 +49,24 @@ namespace pancake {
     }
 
     inline Vector2 operator*(float lhs, const Vector2& rhs) { return rhs * lhs; }
+
+    // this is not a real math operation. use with caution
+    inline Vector2 operator*(const Vector2& lhs, const Vector2& rhs) {
+        Vector2 result;
+        result.X = lhs.X * rhs.X;
+        result.Y = lhs.Y * rhs.Y;
+        return result;
+    }
+
     inline Vector2 operator/(const Vector2& lhs, float rhs) { return lhs * (1.f / rhs); }
+
+    // this is not a real math operation. use with caution
+    inline Vector2 operator/(const Vector2& lhs, const Vector2& rhs) {
+        Vector2 result;
+        result.X = lhs.X / rhs.X;
+        result.Y = lhs.Y / rhs.Y;
+        return result;
+    }
 
     inline Vector2 Vector2::Normalize() const { return *this / Length(); }
 } // namespace pancake

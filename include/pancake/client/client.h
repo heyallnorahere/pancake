@@ -2,12 +2,6 @@
 #include <rclcpp/node.hpp>
 
 #include "pancake/client/view.h"
-#include "pancake/msg/input.hpp"
-
-#include <string>
-#include <unordered_map>
-#include <type_traits>
-#include <utility>
 
 // no SDL header in client.h
 struct SDL_Window;

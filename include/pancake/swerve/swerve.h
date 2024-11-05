@@ -1,17 +1,6 @@
 #pragma once
-#include <rclcpp/node.hpp>
 
 #include "pancake/swerve/drivetrain.h"
-#include "pancake/msg/odometry_state.hpp"
-#include "pancake/msg/module_state.hpp"
-#include "pancake/msg/swerve_request.hpp"
-#include "pancake/msg/drivetrain_meta.hpp"
-
-#include "pancake/srv/pidsva.hpp"
-
-#include <memory>
-#include <chrono>
-#include <optional>
 
 namespace pancake::swerve {
     struct ModuleTelemetry {

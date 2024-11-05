@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <gtest/gtest.h>
 
+#include <pancakepch.h>
 #include <pancake/vector2.h>
 #include <pancake/swerve/drivetrain.h>
 #include <pancake/swerve/pid_controller.h>

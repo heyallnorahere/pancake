@@ -1,13 +1,9 @@
+#include "pancakepch.h"
 #include "pancake/swerve/swerve.h"
 
 #include "pancake/config.h"
 
-#include <chrono>
-#include <string>
-
 #include <librevfree/CanBus.h>
-
-using namespace std::chrono_literals;
 
 namespace pancake {
     void from_json(const nlohmann::json& src, Vector2& dst) {
@@ -156,8 +152,18 @@ namespace pancake::swerve {
         auto bus = rev::CanBus::Get(config.Network);
         sim |= !bus->IsOpen();
 
-        if (!LoadConfig(get_name(), config) && !sim) {
-            SaveConfig(get_name(), config);
+        if (!LoadConfig(get_name(), config)) {
+            if (sim) {
+                auto& simModule = config.Modules.emplace_back();
+
+                float sqrt2Over2 = 1.f / std::sqrt(2.f);
+                simModule.CenterOffset = { sqrt2Over2, sqrt2Over2 };
+                simModule.RotationalOffset = std::numbers::pi_v<float> / 4.f;
+                simModule.Drive = 2;
+                simModule.Rotation = 1;
+            } else {
+                SaveConfig(get_name(), config);
+            }
         }
 
         m_Drivetrain = std::make_shared<Drivetrain>(config, sim);
@@ -197,6 +203,9 @@ namespace pancake::swerve {
                                                    &drivetrainConfig.Rotation.Constants);
         */
 
+        m_MetaPublisher =
+            create_publisher<pancake::msg::DrivetrainMeta>("/pancake/swerve/meta", 10);
+
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
     }
@@ -226,8 +235,14 @@ namespace pancake::swerve {
         m_MetaPublisher->publish(meta);
 
         for (size_t i = 0; i < modules.size(); i++) {
-            const auto& module = modules[i].Module;
+            const auto& moduleData = modules[i];
+            const auto& module = moduleData.Module;
             const auto& telemetry = m_ModuleTelemetry[i];
+
+            pancake::msg::RobotTransform moduleMeta;
+            moduleMeta.x = moduleData.CenterOffset.X;
+            moduleMeta.y = moduleData.CenterOffset.Y;
+            moduleMeta.rotation = moduleData.RotationalOffset;
 
             pancake::msg::ModuleState sentState, sentTarget;
             const auto& state = module->GetState();
@@ -239,6 +254,7 @@ namespace pancake::swerve {
             sentTarget.angle = target.WheelAngle;
             sentTarget.wheel_angular_velocity = target.WheelAngularVelocity;
 
+            telemetry.Meta->publish(moduleMeta);
             telemetry.State->publish(sentState);
             telemetry.Target->publish(sentTarget);
         }

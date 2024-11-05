@@ -1,12 +1,8 @@
+#include "pancakepch.h"
 #include "pancake/client/client.h"
 
 #include "pancake/client/tuner.h"
 #include "pancake/client/drivetrain_view.h"
-
-#include <chrono>
-#include <unordered_map>
-#include <optional>
-#include <limits>
 
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
@@ -14,8 +10,6 @@
 #include <imgui.h>
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_sdlrenderer3.h>
-
-using namespace std::chrono_literals;
 
 namespace pancake::client {
     struct GamepadInputInfo {

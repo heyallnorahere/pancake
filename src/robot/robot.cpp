@@ -1,13 +1,7 @@
+#include "pancakepch.h"
 #include "pancake/robot/robot.h"
 
 #include "pancake/vector2.h"
-
-#include <chrono>
-#include <numbers>
-
-#include <rclcpp/serialization.hpp>
-
-using namespace std::chrono_literals;
 
 namespace pancake::robot {
     struct InputState {
@@ -77,15 +71,6 @@ namespace pancake::robot {
         ProcessInput();
     }
 
-    void Robot::InputMessageReceived(std::shared_ptr<rclcpp::SerializedMessage> message) {
-        rclcpp::Serialization<pancake::msg::Input> serialization;
-
-        pancake::msg::Input input;
-        serialization.deserialize_message(message.get(), &input);
-
-        InputReceived(input);
-    }
-
     void Robot::ProcessInput() {
         Vector2 direction;
         direction.X = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 1);
@@ -114,11 +99,7 @@ namespace pancake::robot {
         request.velocity.angular_velocity = angular;
         request.absolute = true;
 
-        rclcpp::Serialization<pancake::msg::SwerveRequest> serialization;
-        rclcpp::SerializedMessage message;
-        serialization.serialize_message(&request, &message);
-
-        m_RequestPublisher->publish(message);
+        m_RequestPublisher->publish(request);
     }
 
     void Robot::Update() { UpdateInput(); }

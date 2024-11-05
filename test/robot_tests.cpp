@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <rclcpp/rclcpp.hpp>
 
+#include <pancakepch.h>
 #include <pancake/client/client.h>
 #include <pancake/robot/robot.h>
 #include <pancake/msg/input.hpp>

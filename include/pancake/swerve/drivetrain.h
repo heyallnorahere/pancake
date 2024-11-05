@@ -1,17 +1,11 @@
 #pragma once
 
-#include <optional>
-#include <vector>
-#include <chrono>
-
 #include <librevfree.h>
 #include <librevfree/sim/SparkMaxSim.h>
 
 #include "pancake/vector2.h"
 #include "pancake/swerve/pid_controller.h"
 #include "pancake/swerve/swerve_module.h"
-#include "pancake/msg/odometry_state.hpp"
-#include "pancake/msg/swerve_request.hpp"
 
 namespace pancake::swerve {
     struct SwerveModuleMeta {

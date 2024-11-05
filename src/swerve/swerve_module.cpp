@@ -1,10 +1,5 @@
+#include "pancakepch.h"
 #include "pancake/swerve/swerve_module.h"
-
-#include <rclcpp/logging.hpp>
-
-#include <algorithm>
-#include <numbers>
-#include <iostream>
 
 namespace pancake::swerve {
     SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,

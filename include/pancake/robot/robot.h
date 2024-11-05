@@ -1,8 +1,4 @@
 #pragma once
-#include <rclcpp/node.hpp>
-
-#include "pancake/msg/input.hpp"
-#include "pancake/msg/swerve_request.hpp"
 #include "pancake/client/client.h"
 
 namespace pancake::robot {
@@ -22,7 +18,6 @@ namespace pancake::robot {
         void InputReceived(const pancake::msg::Input& input);
 
     private:
-        void InputMessageReceived(std::shared_ptr<rclcpp::SerializedMessage> message);
         void ProcessInput();
         
         void Update();
