@@ -18,6 +18,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OdometryState.msg"
   "msg/SwerveRequest.msg"
   "msg/ModuleState.msg"
+  "msg/DrivetrainMeta.msg"
   "msg/PID.msg"
   "msg/SVA.msg"
   "srv/PIDSVA.srv"

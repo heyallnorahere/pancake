@@ -5,6 +5,7 @@
 #include "pancake/msg/odometry_state.hpp"
 #include "pancake/msg/module_state.hpp"
 #include "pancake/msg/swerve_request.hpp"
+#include "pancake/msg/drivetrain_meta.hpp"
 
 #include "pancake/srv/pidsva.hpp"
 
@@ -40,6 +41,7 @@ namespace pancake::swerve {
         rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
         rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;
         rclcpp::Publisher<pancake::msg::OdometryState>::SharedPtr m_OdometryPublisher;
+        rclcpp::Publisher<pancake::msg::DrivetrainMeta>::SharedPtr m_MetaPublisher;
 
         rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr m_DriveTuning, m_RotationTuning;
 

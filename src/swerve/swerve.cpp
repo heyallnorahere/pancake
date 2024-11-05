@@ -216,6 +216,13 @@ namespace pancake::swerve {
         m_OdometryPublisher->publish(odometry);
 
         const auto& modules = m_Drivetrain->GetModules();
+        const auto& config = m_Drivetrain->GetConfig();
+
+        pancake::msg::DrivetrainMeta meta;
+        meta.module_count = (uint32_t)modules.size();
+        meta.wheel_radius = config.WheelRadius;
+        m_MetaPublisher->publish(meta);
+
         for (size_t i = 0; i < modules.size(); i++) {
             const auto& module = modules[i].Module;
             const auto& telemetry = m_ModuleTelemetry[i];

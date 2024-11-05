@@ -1,0 +1,2 @@
+uint32 module_count
+float32 wheel_radius
