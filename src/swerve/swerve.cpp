@@ -167,6 +167,8 @@ namespace pancake::swerve {
             auto modulePath = "/pancake/swerve/module/mod" + std::to_string(i);
 
             ModuleTelemetry telemetry;
+            telemetry.Meta =
+                create_publisher<pancake::msg::RobotTransform>(modulePath + "/meta", 10);
             telemetry.Target =
                 create_publisher<pancake::msg::ModuleState>(modulePath + "/target", 10);
             telemetry.State =

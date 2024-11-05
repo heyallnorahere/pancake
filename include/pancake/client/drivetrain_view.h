@@ -33,7 +33,9 @@ namespace pancake::client {
         void UpdateMeta(const pancake::msg::DrivetrainMeta& meta);
 
         rclcpp::Node* m_Node;
-        std::unordered_map<size_t, ModuleInfo> m_Modules;
+        float m_WheelRadius;
+
+        std::vector<ModuleInfo> m_Modules;
         rclcpp::Subscription<pancake::msg::DrivetrainMeta>::SharedPtr m_MetaSubscriber;
     };
 } // namespace pancake::client

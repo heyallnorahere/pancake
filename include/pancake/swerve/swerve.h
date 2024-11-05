@@ -15,6 +15,7 @@
 
 namespace pancake::swerve {
     struct ModuleTelemetry {
+        rclcpp::Publisher<pancake::msg::RobotTransform>::SharedPtr Meta;
         rclcpp::Publisher<pancake::msg::ModuleState>::SharedPtr Target, State;
     };
 

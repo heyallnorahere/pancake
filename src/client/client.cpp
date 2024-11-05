@@ -1,6 +1,7 @@
 #include "pancake/client/client.h"
 
 #include "pancake/client/tuner.h"
+#include "pancake/client/drivetrain_view.h"
 
 #include <chrono>
 #include <unordered_map>
@@ -100,6 +101,7 @@ namespace pancake::client {
         ImGui_ImplSDLRenderer3_Init(m_Renderer);
 
         AddView<Tuner>(this);
+        AddView<DrivetrainView>(this);
     }
 
     Client::~Client() {
