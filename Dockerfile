@@ -15,6 +15,6 @@ COPY include include
 COPY src src
 COPY test test
 
-RUN source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DBUILD_CLIENT=OFF
+RUN source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DSDL_VIDEO=OFF
 RUN source /opt/ros/jazzy/setup.bash && colcon test --ctest-args --output-on-failure --packages-select pancake ; colcon test-result --verbose --all
 ENTRYPOINT [ "/pancake/launch.sh", "integrated" ]

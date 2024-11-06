@@ -49,6 +49,10 @@ namespace pancake::swerve {
             m_IntegralBound = bound;
         }
 
+        inline void SetErrorBound(const std::function<_Ty(_Ty)>& bound) {
+            m_ErrorBound = bound;
+        }
+
         inline void SetSetpoint(_Ty setpoint) { m_Setpoint = setpoint; }
         inline _Ty GetSetpoint() const { return m_Setpoint; }
 
@@ -62,6 +66,10 @@ namespace pancake::swerve {
             m_Samples.push_back(sample);
 
             _Ty error = m_Setpoint - measurement;
+            if (m_ErrorBound.has_value()) {
+                error = m_ErrorBound.value()(error);
+            }
+
             _Ty integral = (_Ty)0;
             _Ty derivative = (_Ty)0;
 
@@ -71,6 +79,14 @@ namespace pancake::swerve {
 
                 _Ty lastError = m_Setpoint - lastSample.Value;
                 _Ty currentError = m_Setpoint - currentSample.Value;
+
+                if (m_ErrorBound.has_value()) {
+                    const auto& errorBound = m_ErrorBound.value();
+
+                    lastError = errorBound(lastError);
+                    currentError = errorBound(currentError);
+                }
+
                 auto delta = std::chrono::duration_cast<std::chrono::duration<_Ty>>(
                     currentSample.Timestamp - lastSample.Timestamp);
 
@@ -124,5 +140,7 @@ namespace pancake::swerve {
 
         std::vector<Sample> m_Samples;
         size_t m_MaxSamples;
+
+        std::optional<std::function<_Ty(_Ty)>> m_ErrorBound;
     };
 }; // namespace pancake::swerve

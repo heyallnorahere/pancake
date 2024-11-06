@@ -2,6 +2,21 @@
 #include "pancake/swerve/swerve_module.h"
 
 namespace pancake::swerve {
+    static float Signum(float x) { return x > 0.f ? 1.f : -1.f; }
+
+    static float NormalizeAngle(float angle) {
+        const float pi = std::numbers::pi_v<float>;
+        while (std::abs(angle) > pi) {
+            angle -= pi * 2.f * Signum(angle);
+        }
+
+        return angle;
+    }
+
+    static float ErrorBound(float gearRatio, float value) {
+        return NormalizeAngle(value) / gearRatio;
+    }
+
     SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
                                const RotationEncoderConfig& encoderConfig)
         : m_Drive(drive), m_Rotation(rotation), m_DriveController(drive.Constants.Feedback),
@@ -15,43 +30,28 @@ namespace pancake::swerve {
         m_RotationEncoder = std::make_shared<rev::Encoder>(m_Rotation.Motor);
         m_DutyCycleEncoder =
             std::make_shared<rev::Encoder>(m_Rotation.Motor, rev::EncoderMode::DutyCycle);
-    }
 
-    static float Signum(float x) { return x > 0.f ? 1.f : -1.f; }
-
-    static float NormalizeAngle(float angle) {
-        const float pi = std::numbers::pi_v<float>;
-        while (std::abs(angle) > pi) {
-            angle -= pi * 2.f * Signum(angle);
-        }
-
-        return angle;
+        m_RotationController.SetErrorBound(
+            std::bind(ErrorBound, rotation.GearRatio, std::placeholders::_1));
     }
 
     void SwerveModule::Update() {
         float rotationMotorVelocity = m_RotationEncoder->GetMotorVelocity();
         float wheelWellVelocity = rotationMotorVelocity * m_Rotation.GearRatio;
 
-        float encoderPosition =
-            NormalizeAngle(m_DutyCycleEncoder->GetMotorPosition() / m_EncoderConfig.GearRatio);
-
+        float encoderPosition = m_DutyCycleEncoder->GetMotorPosition() / m_EncoderConfig.GearRatio;
         float wheelPosition = encoderPosition;
+
         if (m_EncoderConfig.Mode != RotationEncoderMode::Output) {
             wheelPosition *= m_Rotation.GearRatio;
         }
 
-        static const float pi = std::numbers::pi_v<float>;
-        float angleDifference = m_Target.WheelAngle - wheelPosition;
+        wheelPosition = NormalizeAngle(wheelPosition);
 
-        if (std::abs(angleDifference) > pi) {
-            wheelPosition += 2.f * pi * Signum(angleDifference);
-        }
-
-        float desiredRotation = m_Target.WheelAngle / m_Rotation.GearRatio;
         float desiredVelocity =
             m_Target.WheelAngularVelocity / m_Drive.GearRatio - wheelWellVelocity;
 
-        m_RotationController.SetSetpoint(desiredRotation);
+        m_RotationController.SetSetpoint(m_Target.WheelAngle);
         m_DriveController.SetSetpoint(desiredVelocity);
 
         float driveMotorVelocity = m_DriveEncoder->GetMotorVelocity();
@@ -61,10 +61,9 @@ namespace pancake::swerve {
 
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
-        float rotationMotorPosition = wheelPosition / m_Rotation.GearRatio;
-        float rotationPID = m_RotationController.Evaluate(rotationMotorPosition);
-        float rotationFeedforward =
-            m_RotationFeedforward.Evaluate(desiredRotation - rotationMotorPosition);
+        float rotationPID = m_RotationController.Evaluate(wheelPosition);
+        float rotationFeedforward = m_RotationFeedforward.Evaluate(
+            ErrorBound(m_Rotation.GearRatio, m_Target.WheelAngle - wheelPosition));
 
         float rotationVoltage = rotationPID + rotationFeedforward;
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);

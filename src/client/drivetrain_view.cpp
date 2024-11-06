@@ -63,7 +63,7 @@ namespace pancake::client {
                                  : std::max(std::abs(m_TopRight.X), std::abs(m_BottomLeft.X));
 
         float viewScale = std::min(viewSize.x, viewSize.y) / (2.f * (centerToEdge + cameraMargin));
-        pancake::Vector2 scale = pancake::Vector2(1.f, -1.f) * scale;
+        pancake::Vector2 scale = pancake::Vector2(1.f, -1.f) * viewScale;
 
         pancake::Vector2 centerOffset = pancake::Vector2(viewSize.x, viewSize.y) / 2.f;
         pancake::Vector2 center = pancake::Vector2(viewOrigin.x, viewOrigin.y) + centerOffset;

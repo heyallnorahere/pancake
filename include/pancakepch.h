@@ -23,5 +23,6 @@
 #include <memory>
 #include <tuple>
 #include <stdexcept>
+#include <functional>
 
 using namespace std::chrono_literals;
