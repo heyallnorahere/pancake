@@ -6,3 +6,5 @@ services:
     network_mode: host
     volumes:
       - ./config/:/pancake/config/
+    devices:
+      - /dev/input/:/dev/input/
