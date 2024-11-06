@@ -62,8 +62,8 @@ namespace pancake::client {
                                  ? std::max(std::abs(m_TopRight.Y), std::abs(m_BottomLeft.Y))
                                  : std::max(std::abs(m_TopRight.X), std::abs(m_BottomLeft.X));
 
-        pancake::Vector2 scale = pancake::Vector2(1.f, -1.f) * std::min(viewSize.x, viewSize.y) /
-                                 (2.f * (centerToEdge + cameraMargin));
+        float viewScale = std::min(viewSize.x, viewSize.y) / (2.f * (centerToEdge + cameraMargin));
+        pancake::Vector2 scale = pancake::Vector2(1.f, -1.f) * scale;
 
         pancake::Vector2 centerOffset = pancake::Vector2(viewSize.x, viewSize.y) / 2.f;
         pancake::Vector2 center = pancake::Vector2(viewOrigin.x, viewOrigin.y) + centerOffset;
@@ -103,10 +103,10 @@ namespace pancake::client {
             auto p1 = center + scale * (modulePosition + targetVector).Rotate(rotation);
             auto p2 = center + scale * (modulePosition + actualVector).Rotate(rotation);
 
-            drawList->AddCircle(p0, m_WheelRadius * scale.X, 0xFFFFFFFF);
+            drawList->AddCircle(p0, m_WheelRadius * viewScale, 0xFFFFFFFF);
 
             static constexpr uint32_t targetColor = 0xFF0000FF;
-            float vectorEndRadius = 0.025 * scale.X;
+            float vectorEndRadius = 0.025 * viewScale;
             drawList->AddLine(p0, p1, targetColor);
 
             if (targetVector.Length2() >= std::numeric_limits<float>::epsilon()) {

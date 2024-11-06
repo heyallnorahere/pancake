@@ -72,12 +72,14 @@ namespace pancake::swerve {
         m_Target = target;
         m_Target.WheelAngle = NormalizeAngle(m_Target.WheelAngle);
 
+        /*
         const float pi = std::numbers::pi_v<float>;
         float angleDifference = NormalizeAngle(m_Target.WheelAngle - m_State.WheelAngle);
-        if (std::abs(angleDifference) > pi / 2.f) {
+        if (std::abs(angleDifference) > pi * 3.f / 4.f) {
             m_Target.WheelAngle -= pi * Signum(m_Target.WheelAngle);
             m_Target.WheelAngularVelocity *= -1.f;
         }
+        */
     }
 
     void SwerveModule::Retune(const MotorConstants<float>& drive,
