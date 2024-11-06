@@ -35,11 +35,8 @@ namespace pancake::swerve {
         float encoderPosition =
             NormalizeAngle(m_DutyCycleEncoder->GetMotorPosition() / m_EncoderConfig.GearRatio);
 
-        float rotationMotorPosition = encoderPosition;
         float wheelPosition = encoderPosition;
-        if (m_EncoderConfig.Mode == RotationEncoderMode::Output) {
-            rotationMotorPosition /= m_Rotation.GearRatio;
-        } else {
+        if (m_EncoderConfig.Mode != RotationEncoderMode::Output) {
             wheelPosition *= m_Rotation.GearRatio;
         }
 
@@ -64,6 +61,7 @@ namespace pancake::swerve {
 
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
+        float rotationMotorPosition = wheelPosition / m_Rotation.GearRatio;
         float rotationPID = m_RotationController.Evaluate(rotationMotorPosition);
         float rotationFeedforward =
             m_RotationFeedforward.Evaluate(desiredRotation - rotationMotorPosition);
@@ -81,7 +79,7 @@ namespace pancake::swerve {
 
         const float pi = std::numbers::pi_v<float>;
         float angleDifference = NormalizeAngle(m_Target.WheelAngle - m_State.WheelAngle);
-        if (std::abs(angleDifference) > pi * 2.f) {
+        if (std::abs(angleDifference) > pi / 2.f) {
             m_Target.WheelAngle -= pi * Signum(m_Target.WheelAngle);
             m_Target.WheelAngularVelocity *= -1.f;
         }
