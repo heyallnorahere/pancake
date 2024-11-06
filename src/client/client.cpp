@@ -63,46 +63,52 @@ namespace pancake::client {
         return {};
     }
 
-    Client::Client()
-        : Node("client"), m_Window(nullptr), m_Renderer(nullptr), m_SDLInitialized(false) {
+    Client::Client() : Node("client"), m_Window(nullptr), m_Renderer(nullptr), m_HasVideo(false) {
         static constexpr uint32_t desiredFPS = 60;
         static constexpr std::chrono::duration<double> interval = 1s / desiredFPS;
         static constexpr uint32_t flags =
             SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
 
         SDL_SetHint("SDL_HINT_JOYSTICK_THREAD", "1");
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) != 0) {
+        if (SDL_Init(SDL_INIT_GAMEPAD) != 0) {
             RCLCPP_ERROR(get_logger(), "Failed to initialize SDL!");
             return;
         }
 
-        m_Window = SDL_CreateWindow("Pancake swerve client", 1600, 900, flags);
-        m_Renderer = SDL_CreateRenderer(m_Window, nullptr);
-        m_SDLInitialized = true;
+        if (SDL_InitSubSystem(SDL_INIT_VIDEO) >= 0) {
+            m_Window = SDL_CreateWindow("Pancake swerve client", 1600, 900, flags);
+            m_Renderer = SDL_CreateRenderer(m_Window, nullptr);
 
-        SDL_SetRenderVSync(m_Renderer, SDL_TRUE);
-        SDL_ShowWindow(m_Window);
+            SDL_SetRenderVSync(m_Renderer, SDL_TRUE);
+            SDL_ShowWindow(m_Window);
+
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGui::StyleColorsDark();
+
+            ImGui_ImplSDL3_InitForSDLRenderer(m_Window, m_Renderer);
+            ImGui_ImplSDLRenderer3_Init(m_Renderer);
+
+            AddView<Tuner>(this);
+            AddView<DrivetrainView>(this);
+
+            m_HasVideo = true;
+        }
 
         m_Publisher = create_publisher<pancake::msg::Input>("/pancake/client/control", 10);
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
-
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGui::StyleColorsDark();
-
-        ImGui_ImplSDL3_InitForSDLRenderer(m_Window, m_Renderer);
-        ImGui_ImplSDLRenderer3_Init(m_Renderer);
-
-        AddView<Tuner>(this);
-        AddView<DrivetrainView>(this);
     }
 
     Client::~Client() {
-        if (m_SDLInitialized) {
+        if (m_HasVideo) {
             ImGui_ImplSDLRenderer3_Shutdown();
             ImGui_ImplSDL3_Shutdown();
             ImGui::DestroyContext();
+        }
+
+        if (m_Renderer != nullptr) {
+            SDL_DestroyRenderer(m_Renderer);
         }
 
         if (m_Window != nullptr) {
@@ -119,7 +125,9 @@ namespace pancake::client {
     void Client::Update() {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL3_ProcessEvent(&event);
+            if (m_HasVideo) {
+                ImGui_ImplSDL3_ProcessEvent(&event);
+            }
 
             switch (event.type) {
             case SDL_EVENT_QUIT:
@@ -146,21 +154,23 @@ namespace pancake::client {
             }
         }
 
-        ImGui_ImplSDLRenderer3_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
+        if (m_HasVideo) {
+            ImGui_ImplSDLRenderer3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
 
-        for (const auto& [id, view] : m_Views) {
-            view->Update();
+            for (const auto& [id, view] : m_Views) {
+                view->Update();
+            }
+
+            SDL_SetRenderDrawColorFloat(m_Renderer, 0.f, 0.f, 0.f, 1.f);
+            SDL_RenderClear(m_Renderer);
+
+            ImGui::Render();
+            ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
+
+            SDL_RenderPresent(m_Renderer);
         }
-
-        SDL_SetRenderDrawColorFloat(m_Renderer, 0.f, 0.f, 0.f, 1.f);
-        SDL_RenderClear(m_Renderer);
-
-        ImGui::Render();
-        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
-
-        SDL_RenderPresent(m_Renderer);
     }
 
     void Client::SendButton(const SDL_GamepadButtonEvent& event) {

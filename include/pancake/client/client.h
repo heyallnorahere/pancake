@@ -55,7 +55,7 @@ namespace pancake::client {
         SDL_Window* m_Window;
         SDL_Renderer* m_Renderer;
         std::unordered_map<uint32_t, SDL_Gamepad*> m_Gamepads;
-        bool m_SDLInitialized;
+        bool m_HasVideo;
 
         rclcpp::TimerBase::SharedPtr m_Timer;
         rclcpp::Publisher<pancake::msg::Input>::SharedPtr m_Publisher;
