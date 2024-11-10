@@ -20,16 +20,16 @@ namespace pancake::swerve {
         linear.Y = request.velocity.y;
 
         auto logger = rclcpp::get_logger("swerve");
-        RCLCPP_INFO(logger, "Setting request:");
-        RCLCPP_INFO(logger, "\tRequest type: %s", request.absolute ? "absolute" : "relative");
+        RCLCPP_DEBUG(logger, "Setting request:");
+        RCLCPP_DEBUG(logger, "\tRequest type: %s", request.absolute ? "absolute" : "relative");
 
-        RCLCPP_INFO(logger, "\tX velocity: %f m/s", linear.X);
-        RCLCPP_INFO(logger, "\tY velocity: %f m/s", linear.Y);
-        RCLCPP_INFO(logger, "\tLinear velocity: %f m/s", linear.Length());
-        RCLCPP_INFO(logger, "\tLinear velocity angle: %f degrees",
+        RCLCPP_DEBUG(logger, "\tX velocity: %f m/s", linear.X);
+        RCLCPP_DEBUG(logger, "\tY velocity: %f m/s", linear.Y);
+        RCLCPP_DEBUG(logger, "\tLinear velocity: %f m/s", linear.Length());
+        RCLCPP_DEBUG(logger, "\tLinear velocity angle: %f degrees",
                     std::atan2(linear.Y, linear.X) * 180.f / std::numbers::pi_v<float>);
 
-        RCLCPP_INFO(logger, "\tAngular velocity: %f rad/s", request.velocity.angular_velocity);
+        RCLCPP_DEBUG(logger, "\tAngular velocity: %f rad/s", request.velocity.angular_velocity);
 
         m_Request = request;
     }
