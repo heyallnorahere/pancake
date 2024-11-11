@@ -1,0 +1,25 @@
+{
+    "outputFormat": "urdf",
+    "documentId": "24af23b84924bcae2e494b27",
+    "versionId": "8eeab35e50fe7068a3e6b51f",
+    "assemblyName": "Swerve bot",
+    "packageName": "pancake/resource",
+    "ignore": [
+        "power_distribution_hub",
+        "placeholder_m2_bolt",
+        "rev-21-1652_and_rev-11-2159_with_8mm_shaft",
+        "rev-11-1271",
+        "spark_max_&_bracket",
+        "rev-41-1615",
+        "3:1_gearbox",
+        "4:1_gearbox",
+        "rotation_motor_mounting_bracket",
+        "rev-21-1651",
+        "120a_main_breaker",
+        "raspberry_pi_4_model_b",
+        "rev-41-1608",
+        "rev-20-3003"
+    ],
+    "mergeSTLs": "no",
+    "addDummyBaseLink": true
+}

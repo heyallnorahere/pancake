@@ -4,3 +4,4 @@ log/
 install/
 config/
 imgui.ini
+*.part
