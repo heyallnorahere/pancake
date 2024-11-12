@@ -10,6 +10,7 @@ COPY vendor vendor
 COPY msg msg
 COPY srv srv
 COPY launch launch
+COPY resource resource
 COPY package.xml CMakeLists.txt launch.sh ./
 COPY include include
 COPY src src
