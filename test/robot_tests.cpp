@@ -11,7 +11,7 @@
 
 using namespace std::chrono_literals;
 
-TEST(pancake, input_test) {
+TEST(robot, input_test) {
     pancake::robot::Robot node;
 
     pancake::msg::Input input;

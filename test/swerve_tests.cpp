@@ -17,7 +17,7 @@
 
 using namespace std::chrono_literals;
 
-TEST(pancake, vector_math) {
+TEST(swerve, vector_math) {
     pancake::Vector2 a;
     a.X = 7.f;
     a.Y = 42.f;
@@ -33,12 +33,12 @@ TEST(pancake, vector_math) {
     ASSERT_FLOAT_EQ(aPrime2.Y, sqrt2Over2 * (a.X + a.Y));
 }
 
-TEST(pancake, module_test) {
+TEST(swerve, module_targeting) {
     pancake::msg::SwerveRequest request;
     request.absolute = true;
     request.velocity.x = 0.25f;
     request.velocity.y = 0.f;
-    request.velocity.angular_velocity = 0.f;
+    request.velocity.angular_velocity = std::numbers::pi_v<float> / 2.f;
 
     pancake::Vector2 requestedLinear;
     requestedLinear.X = request.velocity.x;
@@ -79,7 +79,7 @@ static _Ty signum(_Ty value) {
     return value > (_Ty)0 ? (_Ty)1 : (_Ty)-1;
 }
 
-TEST(pancake, pid) {
+TEST(swerve, pid) {
     std::vector<float> measurements = { 10.f, 30.f };
     pancake::swerve::PID<float> pid;
     pid.Proportional = 42.f;
@@ -123,7 +123,7 @@ TEST(pancake, pid) {
     ASSERT_GT(result * signum(ex), std::abs(ex * 2.f / 3.f));
 }
 
-TEST(pancake, swerve_telemetry) {
+TEST(swerve, multi_module) {
     auto t0 = std::chrono::high_resolution_clock::now();
 
     pancake::swerve::Drivetrain::Config config;
