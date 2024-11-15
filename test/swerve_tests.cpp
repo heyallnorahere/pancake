@@ -5,11 +5,13 @@
 #include <pancake/vector2.h>
 #include <pancake/swerve/drivetrain.h>
 #include <pancake/swerve/pid_controller.h>
+#include <pancake/swerve/swerve.h>
 
 #include <numbers>
 #include <chrono>
 #include <thread>
 #include <limits>
+#include <future>
 
 #include <cmath>
 
@@ -54,7 +56,7 @@ TEST(pancake, module_test) {
     const auto& modules = swerve.GetModules();
 
     for (const auto& meta : modules) {
-        float moduleRotation = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
+        float moduleRotation = meta.RotationalOffset;
         if (request.absolute) {
             moduleRotation += swerve.GetOdometry().transform.rotation;
         }
@@ -121,7 +123,62 @@ TEST(pancake, pid) {
     ASSERT_GT(result * signum(ex), std::abs(ex * 2.f / 3.f));
 }
 
+TEST(pancake, swerve_telemetry) {
+    auto t0 = std::chrono::high_resolution_clock::now();
+
+    pancake::swerve::Drivetrain::Config config;
+    config.Drive.GearRatio = 1.f;
+    config.Rotation.GearRatio = 1.f;
+    config.WheelRadius = 1.f;
+    config.Network = "can0";
+    config.EncoderConfig.Mode = pancake::swerve::RotationEncoderMode::Output;
+    config.EncoderConfig.GearRatio = 1.f;
+
+    for (size_t i = 0; i < 4; i++) {
+        float angle = std::numbers::pi_v<float> * (1.f / 4.f + i / 2.f);
+
+        pancake::swerve::SwerveModuleDesc desc;
+        desc.CenterOffset = { std::cos(angle), std::sin(angle) };
+        desc.RotationalOffset = angle;
+        desc.Drive = 2 + i * 2;
+        desc.Rotation = 1 + i * 2;
+
+        config.Modules.push_back(desc);
+    }
+
+    pancake::msg::SwerveRequest request{};
+    request.absolute = true;
+    request.velocity.x = 1.f;
+
+    pancake::swerve::Drivetrain drivetrain(config, true);
+    drivetrain.SetRequest(request);
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto delta = std::chrono::duration_cast<std::chrono::duration<float>>(t1 - t0);
+    drivetrain.Update(delta);
+
+    const auto& modules = drivetrain.GetModules();
+    for (const auto& module : modules) {
+        const auto& target = module.Module->GetTarget();
+
+        float targetAngle = target.WheelAngle;
+        if (target.WheelAngularVelocity < 0.f) {
+            targetAngle += std::numbers::pi_v<float>; // see SwerveModule::SetTarget
+        }
+
+        ASSERT_FLOAT_EQ(pancake::swerve::SwerveModule::NormalizeAngle(targetAngle),
+                        pancake::swerve::SwerveModule::NormalizeAngle(-module.RotationalOffset));
+
+        ASSERT_FLOAT_EQ(
+            std::abs(target.WheelAngularVelocity),
+            std::sqrt(std::pow(request.velocity.x, 2.f) + std::pow(request.velocity.y, 2.f)) /
+                config.WheelRadius);
+    }
+}
+
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
+    rclcpp::init(argc, argv);
+
     return RUN_ALL_TESTS();
 }

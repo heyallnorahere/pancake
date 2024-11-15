@@ -10,7 +10,7 @@ namespace pancake::swerve {
 
     class Swerve : public rclcpp::Node {
     public:
-        Swerve();
+        Swerve(bool sim = false);
         ~Swerve() = default;
 
         Swerve(const Swerve&) = delete;

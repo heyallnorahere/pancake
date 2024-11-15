@@ -135,7 +135,7 @@ namespace pancake::swerve {
         dst["RotationEncoder"] = src.EncoderConfig;
     }
 
-    Swerve::Swerve() : Node("swerve") {
+    Swerve::Swerve(bool sim) : Node("swerve") {
         Drivetrain::Config config;
         config.Drive = config.Rotation = {};
 
@@ -148,19 +148,22 @@ namespace pancake::swerve {
         config.EncoderConfig.Mode = RotationEncoderMode::Output;
         config.EncoderConfig.GearRatio = 1.f;
 
-        bool sim = false;
         auto bus = rev::CanBus::Get(config.Network);
         sim |= !bus->IsOpen();
 
         if (!LoadConfig(get_name(), config)) {
             if (sim) {
-                auto& simModule = config.Modules.emplace_back();
+                for (size_t i = 0; i < 4; i++) {
+                    float angle = std::numbers::pi_v<float> * (1.f / 4.f + i / 2.f);
 
-                float sqrt2Over2 = 1.f / std::sqrt(2.f);
-                simModule.CenterOffset = { sqrt2Over2, sqrt2Over2 };
-                simModule.RotationalOffset = std::numbers::pi_v<float> / 4.f;
-                simModule.Drive = 2;
-                simModule.Rotation = 1;
+                    SwerveModuleDesc simModule;
+                    simModule.CenterOffset = { std::cos(angle), std::sin(angle) };
+                    simModule.RotationalOffset = angle;
+                    simModule.Drive = 2 + i * 2;
+                    simModule.Rotation = 1 + i * 2;
+
+                    config.Modules.push_back(simModule);
+                }
             } else {
                 SaveConfig(get_name(), config);
             }

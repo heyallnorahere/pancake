@@ -4,7 +4,7 @@
 namespace pancake::swerve {
     static float Signum(float x) { return x > 0.f ? 1.f : -1.f; }
 
-    static float NormalizeAngle(float angle) {
+    float SwerveModule::NormalizeAngle(float angle) {
         const float pi = std::numbers::pi_v<float>;
         while (std::abs(angle) > pi) {
             angle -= pi * 2.f * Signum(angle);
@@ -14,7 +14,7 @@ namespace pancake::swerve {
     }
 
     static float ErrorBound(float gearRatio, float value) {
-        return NormalizeAngle(value) / gearRatio;
+        return SwerveModule::NormalizeAngle(value) / gearRatio;
     }
 
     SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,

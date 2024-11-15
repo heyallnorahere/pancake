@@ -32,6 +32,8 @@ namespace pancake::swerve {
 
     class SwerveModule {
     public:
+        static float NormalizeAngle(float angle);
+
         SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
                      const RotationEncoderConfig& encoderConfig);
         ~SwerveModule() = default;

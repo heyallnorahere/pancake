@@ -14,5 +14,9 @@ if(BUILD_TESTING)
     target_link_libraries(test_${TEST_NAME} swerve-lib robot-lib ${CPP_TYPESUPPORT_TARGET})
     set_target_properties(test_${TEST_NAME} PROPERTIES
       CXX_STANDARD 20)
+
+    if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+      target_link_libraries(test_${TEST_NAME} pthread)
+    endif()
   endforeach()
 endif()
