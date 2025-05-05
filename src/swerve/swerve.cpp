@@ -164,9 +164,9 @@ namespace pancake::swerve {
 
                     config.Modules.push_back(simModule);
                 }
-            } else {
-                SaveConfig(get_name(), config);
             }
+            
+            SaveConfig(get_name(), config);
         }
 
         m_Drivetrain = std::make_shared<Drivetrain>(config, sim);

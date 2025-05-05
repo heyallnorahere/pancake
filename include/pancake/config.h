@@ -18,12 +18,22 @@ namespace pancake {
     namespace fs = std::experimental::filesystem;
 #endif
 
-    static const pancake::fs::path s_ConfigDir = "/pancake/config";
+    static const pancake::fs::path s_RootDir = "/pancake/";
+    static const pancake::fs::path s_ConfigDir = "config/";
+
+    inline pancake::fs::path GetConfigDir() {
+        pancake::fs::path rootDir = s_RootDir;
+        if (!pancake::fs::is_directory(rootDir)) {
+            rootDir = pancake::fs::current_path();
+        }
+
+        return rootDir / s_ConfigDir;
+    }
 
     template <typename _Ty>
     inline bool LoadConfig(const std::string& name, _Ty& data) {
         auto filename = name + ".json";
-        auto configPath = s_ConfigDir / filename;
+        auto configPath = GetConfigDir() / filename;
 
         std::ifstream config(configPath);
         if (!config.is_open()) {
@@ -41,10 +51,11 @@ namespace pancake {
     template <typename _Ty>
     inline void SaveConfig(const std::string& name, const _Ty& data) {
         auto filename = name + ".json";
-        auto configPath = s_ConfigDir / filename;
+        auto configDir = GetConfigDir();
+        auto configPath = configDir / filename;
 
-        if (!pancake::fs::is_directory(s_ConfigDir)) {
-            pancake::fs::create_directories(s_ConfigDir);
+        if (!pancake::fs::is_directory(configDir)) {
+            pancake::fs::create_directories(configDir);
         }
 
         std::ofstream config(configPath);
