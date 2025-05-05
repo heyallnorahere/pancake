@@ -1,6 +1,11 @@
 #pragma once
 #include <cmath>
 
+#if __has_include(<nlohmann/json.hpp>)
+#define HAS_JSON
+#include <nlohmann/json.hpp>
+#endif
+
 namespace pancake {
     struct Vector2 {
         Vector2() : X(0.f), Y(0.f) {}
@@ -28,9 +33,7 @@ namespace pancake {
         }
 
 #ifdef IMGUI_VERSION
-        inline operator ImVec2() const {
-            return { X, Y };
-        }
+        inline operator ImVec2() const { return { X, Y }; }
 #endif
     };
 
@@ -69,4 +72,16 @@ namespace pancake {
     }
 
     inline Vector2 Vector2::Normalize() const { return *this / Length(); }
+
+#ifdef HAS_JSON
+    void from_json(const nlohmann::json& src, Vector2& dst) {
+        src["X"].get_to(dst.X);
+        src["Y"].get_to(dst.Y);
+    }
+
+    void to_json(nlohmann::json& dst, const Vector2& src) {
+        dst["X"] = src.X;
+        dst["Y"] = src.Y;
+    }
+#endif
 } // namespace pancake

@@ -20,8 +20,7 @@ add_executable(robot ${ROBOT_MAIN})
 target_link_libraries(robot PRIVATE robot-lib)
 
 set_target_properties(robot-lib robot PROPERTIES
-  CXX_STANDARD 20
-  OUTPUT_NAME "robot")
+  CXX_STANDARD 20)
 
 install(TARGETS robot
   DESTINATION lib/${PROJECT_NAME})

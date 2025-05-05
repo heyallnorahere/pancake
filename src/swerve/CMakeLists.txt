@@ -18,8 +18,7 @@ add_executable(swerve ${SWERVE_MAIN})
 target_link_libraries(swerve PRIVATE swerve-lib)
 
 set_target_properties(swerve swerve-lib PROPERTIES
-  CXX_STANDARD 20
-  OUTPUT_NAME "swerve")
+  CXX_STANDARD 20)
 
 install(TARGETS swerve
   DESTINATION lib/${PROJECT_NAME})
