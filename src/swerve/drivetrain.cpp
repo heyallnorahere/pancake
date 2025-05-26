@@ -27,7 +27,7 @@ namespace pancake::swerve {
         RCLCPP_DEBUG(logger, "\tY velocity: %f m/s", linear.Y);
         RCLCPP_DEBUG(logger, "\tLinear velocity: %f m/s", linear.Length());
         RCLCPP_DEBUG(logger, "\tLinear velocity angle: %f degrees",
-                    std::atan2(linear.Y, linear.X) * 180.f / std::numbers::pi_v<float>);
+                     std::atan2(linear.Y, linear.X) * 180.f / std::numbers::pi_v<float>);
 
         RCLCPP_DEBUG(logger, "\tAngular velocity: %f rad/s", request.velocity.angular_velocity);
 
@@ -96,13 +96,14 @@ namespace pancake::swerve {
             m_Odometry.velocity.x += absoluteModuleVelocity.X / m_Modules.size();
             m_Odometry.velocity.y += absoluteModuleVelocity.Y / m_Modules.size();
             m_Odometry.velocity.angular_velocity +=
-                robotModuleVelocity.Dot(meta.CenterOffset.Rotate(std::numbers::pi_v<float> / 2.f)) /
-                m_Modules.size();
+                absoluteModuleVelocity.Dot(meta.CenterOffset) / m_Modules.size();
         }
 
         m_Odometry.transform.x += m_Odometry.velocity.x * delta.count();
         m_Odometry.transform.y += m_Odometry.velocity.y * delta.count();
         m_Odometry.transform.rotation += m_Odometry.velocity.angular_velocity * delta.count();
+        m_Odometry.transform.rotation =
+            std::fmodf(m_Odometry.transform.rotation, std::numbers::pi_v<float> / 2.f);
     }
 
     void Drivetrain::AddModule(const SwerveModuleDesc& desc) {

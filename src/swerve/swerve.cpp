@@ -165,7 +165,7 @@ namespace pancake::swerve {
                     config.Modules.push_back(simModule);
                 }
             }
-            
+
             SaveConfig(get_name(), config);
         }
 
@@ -227,6 +227,7 @@ namespace pancake::swerve {
         m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
 
         const auto& odometry = m_Drivetrain->GetOdometry();
+        RCLCPP_INFO(get_logger(), "Rotation: %f degrees", odometry.transform.rotation * 180.f / std::numbers::pi_v<float>);
         m_OdometryPublisher->publish(odometry);
 
         const auto& modules = m_Drivetrain->GetModules();
