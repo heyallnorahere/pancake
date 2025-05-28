@@ -103,7 +103,7 @@ namespace pancake::swerve {
         m_Odometry.transform.y += m_Odometry.velocity.y * delta.count();
         m_Odometry.transform.rotation += m_Odometry.velocity.angular_velocity * delta.count();
         m_Odometry.transform.rotation =
-            std::fmodf(m_Odometry.transform.rotation, std::numbers::pi_v<float> / 2.f);
+            std::fmod(m_Odometry.transform.rotation, std::numbers::pi_v<float> / 2.f);
     }
 
     void Drivetrain::AddModule(const SwerveModuleDesc& desc) {
