@@ -98,6 +98,8 @@ namespace pancake::client {
         m_Publisher = create_publisher<pancake::msg::Input>("/pancake/client/control", 10);
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
+
+        m_SoftwareKill = create_publisher<pancake::msg::Kill>("/pancake/client/kill", 10);
     }
 
     Client::~Client() {
@@ -154,6 +156,31 @@ namespace pancake::client {
             }
         }
 
+        static constexpr float killThreshold = 0.8f;
+        static const std::unordered_set<SDL_GamepadAxis> killAxes = {
+            SDL_GAMEPAD_AXIS_LEFT_TRIGGER, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER
+        };
+
+        for (const auto& [id, gamepad] : m_Gamepads) {
+            size_t axisThresholdCount = 0;
+            for (auto axis : killAxes) {
+                Sint16 value = SDL_GetGamepadAxis(gamepad, axis);
+                float percent = (float)value / std::numeric_limits<Sint16>::max();
+
+                if (percent >= killThreshold) {
+                    axisThresholdCount++;
+                }
+            }
+
+            if (axisThresholdCount == killAxes.size()) {
+                pancake::msg::Kill kill;
+                kill.kill = true;
+
+                m_SoftwareKill->publish(kill);
+                break;
+            }
+        }
+
         if (m_HasVideo) {
             ImGui_ImplSDLRenderer3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
@@ -200,8 +227,8 @@ namespace pancake::client {
         for (size_t i = 0; i < info.AssociatedAxes.size(); i++) {
             auto axis = info.AssociatedAxes[i];
 
-            int64_t value = SDL_GetGamepadAxis(gamepad, axis);
-            input.axes[i] = (float)value / std::numeric_limits<int16_t>::max();
+            Sint16 value = SDL_GetGamepadAxis(gamepad, axis);
+            input.axes[i] = (float)value / std::numeric_limits<Sint16>::max();
         }
 
         m_Publisher->publish(input);

@@ -211,6 +211,13 @@ namespace pancake::swerve {
 
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
+
+        m_KillListener = create_subscription<pancake::msg::Kill>(
+            "/pancake/client/kill", 10, [](const pancake::msg::Kill& kill) {
+                if (kill.kill) {
+                    throw std::runtime_error("Client sent kill command!");
+                }
+            });
     }
 
     void Swerve::Update() {
@@ -227,7 +234,8 @@ namespace pancake::swerve {
         m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
 
         const auto& odometry = m_Drivetrain->GetOdometry();
-        RCLCPP_INFO(get_logger(), "Rotation: %f degrees", odometry.transform.rotation * 180.f / std::numbers::pi_v<float>);
+        RCLCPP_INFO(get_logger(), "Rotation: %f degrees",
+                    odometry.transform.rotation * 180.f / std::numbers::pi_v<float>);
         m_OdometryPublisher->publish(odometry);
 
         const auto& modules = m_Drivetrain->GetModules();

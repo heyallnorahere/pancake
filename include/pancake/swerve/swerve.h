@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pancake/swerve/drivetrain.h"
+#include "pancake/msg/kill.hpp"
 
 namespace pancake::swerve {
     struct ModuleTelemetry {
@@ -27,6 +28,8 @@ namespace pancake::swerve {
                          std::shared_ptr<pancake::srv::PIDSVA_Response> response);
 
         std::shared_ptr<Drivetrain> m_Drivetrain;
+
+        rclcpp::Subscription<pancake::msg::Kill>::SharedPtr m_KillListener;
 
         rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
         rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;
