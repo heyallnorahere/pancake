@@ -123,11 +123,13 @@ namespace pancake::swerve {
         driveMotor.Motor = std::make_shared<rev::SparkMax>(desc.Drive, m_Config.Network);
         driveMotor.Constants = m_Config.Drive.Constants;
         driveMotor.GearRatio = m_Config.Drive.GearRatio;
+        driveMotor.VoltageLimit = m_Config.Drive.VoltageLimit;
 
         SwerveMotor rotationMotor;
         rotationMotor.Motor = std::make_shared<rev::SparkMax>(desc.Rotation, m_Config.Network);
         rotationMotor.Constants = m_Config.Rotation.Constants;
         rotationMotor.GearRatio = m_Config.Rotation.GearRatio;
+        rotationMotor.VoltageLimit = m_Config.Rotation.VoltageLimit;
 
         meta.Module =
             std::make_shared<SwerveModule>(driveMotor, rotationMotor, m_Config.EncoderConfig);

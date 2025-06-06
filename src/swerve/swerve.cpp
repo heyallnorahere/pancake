@@ -41,6 +41,7 @@ namespace pancake::swerve {
     void from_json(const nlohmann::json& src, SwerveFunction& dst) {
         src["Constants"].get_to(dst.Constants);
         src["GearRatio"].get_to(dst.GearRatio);
+        src["VoltageLimit"].get_to(dst.VoltageLimit);
     }
 
     void from_json(const nlohmann::json& src, SwerveModuleDesc& dst) {
@@ -99,6 +100,7 @@ namespace pancake::swerve {
     void to_json(nlohmann::json& dst, const SwerveFunction& src) {
         dst["Constants"] = src.Constants;
         dst["GearRatio"] = src.GearRatio;
+        dst["VoltageLimit"] = src.VoltageLimit;
     }
 
     void to_json(nlohmann::json& dst, const SwerveModuleDesc& src) {
@@ -145,6 +147,7 @@ namespace pancake::swerve {
         config.WheelRadius = 1.5f * 0.0254f; // in meters
         config.Drive.GearRatio = 2.f / 5.f;
         config.Rotation.GearRatio = -1.f / 48.f;
+        config.Drive.VoltageLimit = config.Rotation.VoltageLimit = 12.f;
         config.EncoderConfig.Mode = RotationEncoderMode::Output;
         config.EncoderConfig.GearRatio = 1.f;
 

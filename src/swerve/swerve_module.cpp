@@ -57,7 +57,8 @@ namespace pancake::swerve {
         float driveMotorVelocity = m_DriveEncoder->GetMotorVelocity();
         float driveFeedforward = m_DriveFeedforward.Evaluate(desiredVelocity);
         float drivePID = m_DriveController.Evaluate(driveMotorVelocity);
-        float driveVoltage = drivePID + driveFeedforward;
+        float driveVoltage =
+            std::clamp(drivePID + driveFeedforward, -m_Drive.VoltageLimit, m_Drive.VoltageLimit);
 
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
@@ -65,7 +66,8 @@ namespace pancake::swerve {
         float rotationFeedforward = m_RotationFeedforward.Evaluate(
             ErrorBound(m_Rotation.GearRatio, m_Target.WheelAngle - wheelPosition));
 
-        float rotationVoltage = rotationPID + rotationFeedforward;
+        float rotationVoltage = std::clamp(rotationPID + rotationFeedforward,
+                                           -m_Rotation.VoltageLimit, m_Rotation.VoltageLimit);
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
