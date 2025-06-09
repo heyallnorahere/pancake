@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM ubuntu:latest AS build
+FROM --platform=$BUILDPLATFORM debian:latest AS build
 SHELL [ "/bin/bash", "-c" ]
 
 ARG TARGETOS
