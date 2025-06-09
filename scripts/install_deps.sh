@@ -6,7 +6,6 @@ TARGETARCH=$1
 
 dpkg --add-architecture $TARGETARCH
 apt-get update
-apt-get install software-properties-common
 add-apt-repository universe
 
 apt-get update
