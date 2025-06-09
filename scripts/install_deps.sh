@@ -9,8 +9,7 @@ apt-get update
 apt-get install -y jq
 
 if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
-    DPKGARCH=$(cat scripts/platforms.json | jq -r ".Architecture.$TARGETARCH")
-    dpkg --add-architecture $DPKGARCH
+    dpkg --add-architecture $TARGETARCH
 fi
 
 apt-get update
@@ -26,3 +25,7 @@ apt install -y /tmp/ros2-apt-source.deb
 apt-get update
 apt-get upgrade -y
 apt-get install -y ros-jazzy-ros-base colcon
+
+if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
+    apt-get install -y ros-jazzy-ros-base:$TARGETARCH
+fi
