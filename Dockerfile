@@ -8,7 +8,7 @@ ARG BUILDARCH
 WORKDIR /pancake
 COPY scripts scripts
 
-RUN scripts/install_deps.sh ${TARGETARCH}
+RUN scripts/install_deps.sh ${TARGETARCH} ${BUILDARCH}
 
 LABEL org.opencontainers.image.source=https://github.com/heyallnorahere/pancake
 LABEL org.opencontainers.image.description="Pancake swerve ^_^"
