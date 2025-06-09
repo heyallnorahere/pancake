@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM debian:latest AS build
+FROM --platform=$BUILDPLATFORM ros:jazzy AS build
 SHELL [ "/bin/bash", "-c" ]
 
 ARG TARGETOS
@@ -8,7 +8,9 @@ ARG BUILDARCH
 WORKDIR /pancake
 COPY scripts scripts
 
-RUN scripts/install_deps.sh ${TARGETARCH} ${BUILDARCH}
+RUN dpkg --add-architecture ${TARGETARCH}
+RUN apt-get update
+RUN apt-get install jq ros-jazzy-ros-base:${TARGETARCH}
 
 LABEL org.opencontainers.image.source=https://github.com/heyallnorahere/pancake
 LABEL org.opencontainers.image.description="Pancake swerve ^_^"
@@ -31,4 +33,4 @@ FROM ros:jazzy AS runtime
 WORKDIR /pancake
 COPY --from=build /pancake/install /pancake/scripts ./
 
-ENTRYPOINT [ "/pancake/launch.sh", "integrated" ]
+ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]
