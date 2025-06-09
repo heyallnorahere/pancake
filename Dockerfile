@@ -9,6 +9,7 @@ WORKDIR /pancake
 COPY scripts scripts
 
 RUN dpkg --add-architecture ${TARGETARCH}
+RUN cp -rf /pancake/scripts/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources
 RUN apt-get update
 RUN apt-get install jq ros-jazzy-ros-base:${TARGETARCH}
 
