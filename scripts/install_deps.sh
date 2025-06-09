@@ -10,6 +10,16 @@ apt-get install -y jq
 
 if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     dpkg --add-architecture $TARGETARCH
+    echo "
+
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports/
+Suites: noble noble-updates noble-security
+Components: main restricted universe multiverse
+Architectures: $TARGETARCH
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+    " > /etc/apt/sources.list.d/ubuntu-$TARGETARCH.sources
 fi
 
 apt-get update
