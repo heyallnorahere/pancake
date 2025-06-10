@@ -36,7 +36,9 @@ WORKDIR /pancake
 COPY --from=build /pancake/install ./install
 COPY --from=build /pancake/scripts ./scripts
 COPY --from=build /pancake/build ./build
+COPY --from=build /pancake/package.xml .
 
-RUN source /pancake/install/setup.bash && colcon test --ctest-args --output-on-failure --packages-select pancake && colcon test-result --verbose --all
+ARG DISTRO
+RUN scripts/test.sh ${DISTRO}
 
 ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]

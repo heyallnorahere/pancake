@@ -47,7 +47,7 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     curl -L $(cat $SCRIPTDIR/ros.json | jq -r ".$DISTRO.$TARGETOS.$TARGETARCH") -o $DISTRO.tar.bz2
 
     echo "Extracting ROS2"
-    tar -xvf $DISTRO.tar.bz2
+    tar -xvf $DISTRO.tar.bz2 -C /opt/ros/$DISTRO
     rm $DISTRO.tar.bz2
 fi
 
