@@ -30,6 +30,7 @@ jobs:
             with:
                 push: true
                 tags: ghcr.io/${{ env.REPO }}:${{ github.sha }},ghcr.io/${{ env.REPO }}:latest
-                file: ./Dockerfile
+                file: ./docker/Dockerfile
+                context: .
                 github-token: ${{ secrets.PAT }}
                 platforms: linux/amd64,linux/arm64

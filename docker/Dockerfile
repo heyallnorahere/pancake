@@ -3,6 +3,13 @@ SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake
 COPY scripts scripts
+COPY docker docker
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG BUILDARCH
+
+RUN /pancake/scripts/buildenv.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
 
 LABEL org.opencontainers.image.source=https://github.com/heyallnorahere/pancake
 LABEL org.opencontainers.image.description="Pancake swerve ^_^"
@@ -17,10 +24,6 @@ COPY package.xml CMakeLists.txt ./
 COPY include include
 COPY src src
 COPY test test
-
-ARG TARGETOS
-ARG TARGETARCH
-ARG BUILDARCH
 
 RUN /pancake/scripts/build.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
 

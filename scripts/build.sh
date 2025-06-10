@@ -3,36 +3,28 @@
 TARGETOS=$1
 TARGETARCH=$2
 BUILDARCH=$3
+
 SCRIPTDIR=$(realpath $(dirname $0))
+DOCKERDIR=$(realpath "$SCRIPTDIR/../docker")
 
 # run on ubuntu
 
-apt-get update
-apt-get install -y jq
-
-COMPILERARCH=$(cat scripts/platforms.json | jq -r ".Architecture.$TARGETARCH")
+COMPILERARCH=$(cat $SCRIPTDIR/platforms.json | jq -r ".Architecture.$TARGETARCH")
+COMPILEROS=$(cat $SCRIPTDIR/platforms.json | jq -r ".OS.$TARGETOS")
 CMAKE_ARGS="-DSDL_VIDEO=OFF"
 
 if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
-    apt-get install -y gcc-$COMPILERARCH-linux-gnu g++-$COMPILERARCH-linux-gnu binutils-$COMPILERARCH-linux-gnu
-
-    dpkg --add-architecture arm64
-    cp -rf $SCRIPTDIR/sources.list.d /etc/apt/
-
-    apt-get update
-    apt-get install -y libpython3-dev:$TARGETARCH
-
-    if [[ $? -ne 0 ]]; then
-        exit 1
-    fi
-
-    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=$SCRIPTDIR/$TARGETARCH.cmake"
+    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_SYSTEM_NAME=$COMPILEROS"
+    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_SYSTEM_PROCESSOR=$COMPILERARCH"
+    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_C_COMPILER=$COMPILERARCH-linux-gnu-gcc"
+    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_CXX_COMPILER=$COMPILERARCH-linux-gnu-g++"
+    CMAKE_ARGS="$CMAKE_ARGS -CMAKE_FIND_ROOT_PATH=/usr/$COMPILERARCH-linux-gnu"
 fi
 
 source /opt/ros/jazzy/setup.bash
 colcon build --cmake-args $CMAKE_ARGS
 
-if [[ "$TAGETARCH" == "$BUILDARCH" ]]; then
+if [[ "$TARGETARCH" == "$BUILDARCH" ]]; then
     colcon test --ctest-args --output-on-failure --packages-select pancake
     colcon test-result --verbose --all
 fi
