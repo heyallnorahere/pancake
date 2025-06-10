@@ -4,7 +4,7 @@ SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake
 COPY scripts scripts
-COPY docker docker
+COPY docker/sources.list.d docker/sources.list.d
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -31,9 +31,11 @@ RUN /pancake/scripts/build.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
 
 FROM ros:${DISTRO} AS runtime
 SHELL [ "/bin/bash", "-c" ]
-
 WORKDIR /pancake
-COPY --from=build /pancake/install /pancake/scripts /pancake/build ./
+
+COPY --from=build /pancake/install ./install
+COPY --from=build /pancake/scripts ./scripts
+COPY --from=build /pancake/build ./build
 
 RUN source /pancake/install/setup.bash && colcon test --ctest-args --output-on-failure --packages-select pancake && colcon test-result --verbose --all
 
