@@ -9,6 +9,7 @@ COPY docker docker
 ARG TARGETOS
 ARG TARGETARCH
 ARG BUILDARCH
+ARG DISTRO
 
 RUN /pancake/scripts/buildenv.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH} ${DISTRO}
 
