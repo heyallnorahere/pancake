@@ -24,7 +24,15 @@ fi
 source /opt/ros/jazzy/setup.bash
 colcon build --cmake-args $CMAKE_ARGS
 
+if [[ $? -ne 0 ]]; then
+    exit 1
+fi
+
 if [[ "$TARGETARCH" == "$BUILDARCH" ]]; then
     colcon test --ctest-args --output-on-failure --packages-select pancake
     colcon test-result --verbose --all
+
+    if [[ $? -ne 0 ]]; then
+        exit 1
+    fi
 fi

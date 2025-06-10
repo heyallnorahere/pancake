@@ -29,6 +29,11 @@ RUN /pancake/scripts/build.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
 
 FROM ros:jazzy AS runtime
 WORKDIR /pancake
-COPY --from=build /pancake/install /pancake/scripts ./
+COPY --from=build /pancake/install /pancake/scripts /pancake/build ./
+
+ARG TARGETARCH
+ARG BUILDARCH
+
+RUN /pancake/scripts/cross-test.sh ${TARGETARCH} ${BUILDARCH}
 
 ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]
