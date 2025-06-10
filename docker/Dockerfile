@@ -28,12 +28,11 @@ COPY test test
 RUN /pancake/scripts/build.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
 
 FROM ros:jazzy AS runtime
+SHELL [ "/bin/bash", "-c" ]
+
 WORKDIR /pancake
 COPY --from=build /pancake/install /pancake/scripts /pancake/build ./
 
-ARG TARGETARCH
-ARG BUILDARCH
-
-RUN /pancake/scripts/cross-test.sh ${TARGETARCH} ${BUILDARCH}
+RUN source /pancake/install/setup.bash && colcon test --ctest-args --output-on-failure --packages-select pancake && colcon test-result --verbose --all
 
 ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]
