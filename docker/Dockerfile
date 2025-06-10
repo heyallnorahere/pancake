@@ -11,7 +11,7 @@ ARG TARGETARCH
 ARG BUILDARCH
 ARG DISTRO
 
-RUN /pancake/scripts/buildenv.sh ${TARGETOS} arm64 ${BUILDARCH} ${DISTRO}
+RUN /pancake/scripts/buildenv.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH} ${DISTRO}
 
 LABEL org.opencontainers.image.source=https://github.com/heyallnorahere/pancake
 LABEL org.opencontainers.image.description="Pancake swerve ^_^"
@@ -27,7 +27,7 @@ COPY include include
 COPY src src
 COPY test test
 
-RUN /pancake/scripts/build.sh ${TARGETOS} arm64 ${BUILDARCH} ${DISTRO}
+RUN /pancake/scripts/build.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH} ${DISTRO}
 
 FROM ros:${DISTRO} AS runtime
 SHELL [ "/bin/bash", "-c" ]
@@ -38,7 +38,7 @@ COPY --from=build /pancake/scripts ./scripts
 COPY --from=build /pancake/build ./build
 COPY --from=build /pancake/package.xml .
 
-#ARG DISTRO
-#RUN scripts/test.sh ${DISTRO}
+ARG DISTRO
+RUN scripts/test.sh ${DISTRO}
 
 ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]
