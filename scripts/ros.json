@@ -1,0 +1,8 @@
+{
+    "jazzy": {
+        "linux": {
+            "arm64": "https://github.com/ros2/ros2/releases/download/release-jazzy-20250430/ros2-jazzy-20250407-linux-noble-arm64.tar.bz2",
+            "amd64": "https://github.com/ros2/ros2/releases/download/release-jazzy-20250430/ros2-jazzy-20250430-linux-noble-amd64.tar.bz2"        
+        }
+    }
+}

@@ -1,4 +1,5 @@
-FROM --platform=$BUILDPLATFORM ros:jazzy AS build
+ARG DISTRO=jazzy
+FROM --platform=$BUILDPLATFORM ros:${DISTRO} AS build
 SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake
@@ -9,7 +10,7 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG BUILDARCH
 
-RUN /pancake/scripts/buildenv.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
+RUN /pancake/scripts/buildenv.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH} ${DISTRO}
 
 LABEL org.opencontainers.image.source=https://github.com/heyallnorahere/pancake
 LABEL org.opencontainers.image.description="Pancake swerve ^_^"
@@ -27,7 +28,7 @@ COPY test test
 
 RUN /pancake/scripts/build.sh ${TARGETOS} ${TARGETARCH} ${BUILDARCH}
 
-FROM ros:jazzy AS runtime
+FROM ros:${DISTRO} AS runtime
 SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake

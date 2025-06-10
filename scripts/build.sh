@@ -19,9 +19,12 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_C_COMPILER=$COMPILERARCH-linux-gnu-gcc"
     CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_CXX_COMPILER=$COMPILERARCH-linux-gnu-g++"
     CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH=/usr/$COMPILERARCH-linux-gnu"
+
+    source ros2-linux/setup.bash
+else
+    source /opt/ros/jazzy/setup.bash
 fi
 
-source /opt/ros/jazzy/setup.bash
 colcon build --cmake-args $CMAKE_ARGS
 
 if [[ $? -ne 0 ]]; then

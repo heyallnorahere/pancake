@@ -3,12 +3,18 @@
 TARGETOS=$1
 TARGETARCH=$2
 BUILDARCH=$3
+DISTRO=$4
 
 SCRIPTDIR=$(realpath $(dirname $0))
 DOCKERDIR=$(realpath "$SCRIPTDIR/../docker")
 
+echo "Configuring build environment"
+echo "Target: $TARGETOS/$TARGETARCH"
+echo "Build: $BUILDARCH"
+echo "ROS2 distro: $DISTRO"
+
 apt-get update
-apt-get install -y jq
+apt-get install -y jq curl bzip2 tar
 
 if [[ $? -ne 0 ]]; then
     exit 1
@@ -32,8 +38,17 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
         exit 1
     fi
 
-    apt-get install -y libpython3-dev:$TARGETARCH
+    apt-get install -y libpython3-dev:$TARGETARCH liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH
     if [[ $? -ne 0 ]]; then
         exit 1
     fi
+
+    echo "Downloading ROS2 ($TARGETOS/$TARGETARCH $DISTRO)"
+    curl -L $(cat $SCRIPTDIR/ros.json | jq -r ".$DISTRO.$TARGETOS.$TARGETARCH") -o $DISTRO.tar.bz2
+
+    echo "Extracting ROS2"
+    tar -xvf $DISTRO.tar.bz2
+    rm $DISTRO.tar.bz2
 fi
+
+echo "Build environment set up!"
