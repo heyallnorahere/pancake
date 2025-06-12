@@ -19,7 +19,6 @@ LABEL org.opencontainers.image.licenses=Apache-2.0
 
 COPY vendor vendor
 COPY msg msg
-COPY srv srv
 COPY launch launch
 COPY resource resource
 COPY package.xml CMakeLists.txt ./
