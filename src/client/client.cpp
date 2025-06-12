@@ -99,7 +99,7 @@ namespace pancake::client {
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
 
-        m_SoftwareKill = create_publisher<pancake::msg::Kill>("/pancake/client/kill", 10);
+        m_SoftwareKill = create_publisher<std_msgs::msg::Bool>("/pancake/client/kill", 10);
     }
 
     Client::~Client() {
@@ -173,8 +173,8 @@ namespace pancake::client {
             }
 
             if (axisThresholdCount == killAxes.size()) {
-                pancake::msg::Kill kill;
-                kill.kill = true;
+                std_msgs::msg::Bool kill;
+                kill.data = true;
 
                 m_SoftwareKill->publish(kill);
                 break;

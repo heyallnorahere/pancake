@@ -1,12 +1,21 @@
 #pragma once
 
 #include "pancake/swerve/drivetrain.h"
-#include "pancake/msg/kill.hpp"
 
 namespace pancake::swerve {
     struct ModuleTelemetry {
         rclcpp::Publisher<pancake::msg::RobotTransform>::SharedPtr Meta;
         rclcpp::Publisher<pancake::msg::ModuleState>::SharedPtr Target, State;
+    };
+
+    struct TuningService {
+        MotorConstants<float>* Constants;
+
+        rclcpp::Publisher<pancake::msg::PID>::SharedPtr PIDPublisher;
+        rclcpp::Subscription<pancake::msg::PID>::SharedPtr PIDSubscriber;
+
+        rclcpp::Publisher<pancake::msg::SVA>::SharedPtr SVAPublisher;
+        rclcpp::Subscription<pancake::msg::SVA>::SharedPtr SVASubscriber;
     };
 
     class Swerve : public rclcpp::Node {
@@ -20,23 +29,24 @@ namespace pancake::swerve {
     private:
         void Update();
 
-        rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr CreateModuleGainService(
-            const std::string& path, MotorConstants<float>* constants);
+        std::unique_ptr<TuningService> CreateTuningService(const std::string& path,
+                                                           MotorConstants<float>* constants);
 
-        void ModuleGains(MotorConstants<float>* constants,
-                         std::shared_ptr<pancake::srv::PIDSVA_Request> request,
-                         std::shared_ptr<pancake::srv::PIDSVA_Response> response);
+        void SetPID(TuningService* service, const pancake::msg::PID& pid);
+        void SetSVA(TuningService* service, const pancake::msg::SVA& sva);
+        void RetuneModules();
 
         std::shared_ptr<Drivetrain> m_Drivetrain;
 
-        rclcpp::Subscription<pancake::msg::Kill>::SharedPtr m_KillListener;
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_KillListener;
 
         rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
         rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;
         rclcpp::Publisher<pancake::msg::OdometryState>::SharedPtr m_OdometryPublisher;
         rclcpp::Publisher<pancake::msg::DrivetrainMeta>::SharedPtr m_MetaPublisher;
 
-        rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr m_DriveTuning, m_RotationTuning;
+        std::unique_ptr<TuningService> m_DriveTuning, m_RotationTuning;
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_SaveConfig;
 
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
         std::optional<std::chrono::high_resolution_clock::time_point> m_LastUpdate;

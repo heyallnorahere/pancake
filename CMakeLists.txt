@@ -24,8 +24,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DrivetrainMeta.msg"
   "msg/PID.msg"
   "msg/SVA.msg"
-  "msg/Kill.msg"
-  "srv/PIDSVA.srv"
 )
 
 rosidl_get_typesupport_target(CPP_TYPESUPPORT_TARGET

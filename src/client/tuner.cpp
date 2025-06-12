@@ -1,34 +1,54 @@
 #include "pancakepch.h"
 #include "pancake/client/tuner.h"
 
+#include <regex>
+
 #include <imgui.h>
 
 namespace pancake::client {
+    Tuner::Tuner(rclcpp::Node* node) {
+        m_Node = node;
+        m_ClientIndex = 0;
+
+        m_SaveConfig =
+            m_Node->create_publisher<std_msgs::msg::Bool>("/pancake/config/save/swerve", 10);
+
+        IsOpen() = true;
+    }
+
     void Tuner::UpdateView(bool* open) {
         ImGui::Begin("Tuner", open);
 
         try {
-            auto services = m_Node->get_service_names_and_types();
-            for (const auto& [path, types] : services) {
+            static const std::unordered_set<std::string> acceptedTypes = { "pancake/msg/PID",
+                                                                           "pancake/msg/SVA" };
+
+            auto topics = m_Node->get_topic_names_and_types();
+            for (const auto& [topicPath, types] : topics) {
                 bool isTunable = false;
                 for (const auto& type : types) {
-                    if (type == "pancake/srv/PIDSVA") {
+                    if (acceptedTypes.contains(type)) {
                         isTunable = true;
                         break;
                     }
                 }
 
                 if (isTunable) {
-                    if (m_ServiceList.contains(path) || m_ServiceBlocklist.contains(path)) {
+                    static const std::regex nameRegex("(.*)/(pid|sva)/[gs]et");
+
+                    std::smatch match;
+                    if (!std::regex_match(topicPath, match, nameRegex)) {
                         continue;
                     }
 
-                    auto index = InstantiateClient(path);
-                    if (index.has_value()) {
-                        m_ServiceList.insert(path);
-                    } else {
-                        m_ServiceBlocklist.insert(path);
+                    auto servicePath = match[1].str();
+                    if (m_ServiceList.contains(servicePath) ||
+                        m_ServiceBlocklist.contains(servicePath)) {
+                        continue;
                     }
+
+                    InstantiateClient(servicePath);
+                    m_ServiceList.insert(servicePath);
                 }
             }
         } catch (const std::runtime_error& exc) {
@@ -39,7 +59,10 @@ namespace pancake::client {
 
         std::vector<size_t> closedClients;
         for (size_t i = 0; i < m_Clients.size(); i++) {
-            if (!m_Clients[i].Client->service_is_ready()) {
+            const auto& pidListenTopic = m_Clients[i].PIDSubscriber->get_topic_name();
+            size_t publisherCount = m_Node->count_publishers(pidListenTopic);
+
+            if (publisherCount == 0) {
                 closedClients.push_back(i);
             }
         }
@@ -81,53 +104,53 @@ namespace pancake::client {
             update |= ImGui::InputFloat("I", &selectedClient.PID.i);
             update |= ImGui::InputFloat("D", &selectedClient.PID.d);
 
+            if (update) {
+                selectedClient.PIDPublisher->publish(selectedClient.PID);
+            }
+
+            update = false;
             ImGui::Text("Feedforward/SVA");
             update |= ImGui::InputFloat("S", &selectedClient.SVA.s);
             update |= ImGui::InputFloat("V", &selectedClient.SVA.v);
             update |= ImGui::InputFloat("A", &selectedClient.SVA.a);
 
             if (update) {
-                UpdateGains(m_ClientIndex);
+                selectedClient.SVAPublisher->publish(selectedClient.SVA);
+            }
+
+            if (ImGui::Button("Save config")) {
+                std_msgs::msg::Bool save;
+                save.data = true;
+
+                m_SaveConfig->publish(save);
             }
         }
 
         ImGui::End();
     }
 
-    std::optional<size_t> Tuner::InstantiateClient(const std::string& path) {
+    size_t Tuner::InstantiateClient(const std::string& path) {
+        size_t index = m_Clients.size();
+
         ClientData data;
         data.Path = path;
-        data.Client = m_Node->create_client<pancake::srv::PIDSVA>(path, 10);
 
-        size_t index = m_Clients.size();
+        data.PIDPublisher = m_Node->create_publisher<pancake::msg::PID>(path + "/pid/set", 10);
+        data.PIDSubscriber = m_Node->create_subscription<pancake::msg::PID>(
+            path + "/pid/get", 10, [this, index](const pancake::msg::PID& pid) {
+                auto& client = m_Clients[index];
+                client.PID = pid;
+            });
+
+        data.SVAPublisher = m_Node->create_publisher<pancake::msg::SVA>(path + "/sva/set", 10);
+        data.SVASubscriber = m_Node->create_subscription<pancake::msg::SVA>(
+            path + "/sva/get", 10, [this, index](const pancake::msg::SVA& sva) {
+                auto& client = m_Clients[index];
+                client.SVA = sva;
+            });
+
         m_Clients.push_back(data);
 
-        std::thread futureThread([this, index]() mutable {
-            auto request = std::make_shared<pancake::srv::PIDSVA_Request>();
-            request->set = false;
-
-            auto& client = m_Clients[index];
-            auto future = client.Client->async_send_request(request);
-
-            future.wait();
-            auto response = future.get();
-
-            client.PID = response->pid;
-            client.SVA = response->sva;
-        });
-
-        futureThread.detach();
         return index;
-    }
-
-    void Tuner::UpdateGains(size_t index) {
-        const auto& client = m_Clients[index];
-
-        auto request = std::make_shared<pancake::srv::PIDSVA_Request>();
-        request->set = true;
-        request->pid = client.PID;
-        request->sva = client.SVA;
-
-        client.Client->async_send_request(request);
     }
 }; // namespace pancake::client

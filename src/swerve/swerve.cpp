@@ -200,14 +200,21 @@ namespace pancake::swerve {
             "/pancake/odometry/reset", 10,
             std::bind(&Drivetrain::ResetOdometry, m_Drivetrain.get(), std::placeholders::_1));
 
-        /* freezes node
         auto& drivetrainConfig = m_Drivetrain->GetConfig();
-        m_DriveTuning = CreateModuleGainService("/pancake/config/drive/gains",
-                                                &drivetrainConfig.Drive.Constants);
+        m_DriveTuning =
+            CreateTuningService("/pancake/config/drive/tuning", &drivetrainConfig.Drive.Constants);
 
-        m_RotationTuning = CreateModuleGainService("/pancake/config/rotation/gains",
-                                                   &drivetrainConfig.Rotation.Constants);
-        */
+        m_RotationTuning = CreateTuningService("/pancake/config/rotation/tuning",
+                                               &drivetrainConfig.Rotation.Constants);
+
+        m_SaveConfig = create_subscription<std_msgs::msg::Bool>(
+            "/pancake/config/save/swerve", 10, [this](const std_msgs::msg::Bool& save) {
+                const auto& config = m_Drivetrain->GetConfig();
+
+                if (save.data) {
+                    SaveConfig(get_name(), config);
+                }
+            });
 
         m_MetaPublisher =
             create_publisher<pancake::msg::DrivetrainMeta>("/pancake/swerve/meta", 10);
@@ -215,9 +222,9 @@ namespace pancake::swerve {
         m_LastUpdate = std::chrono::high_resolution_clock::now();
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
 
-        m_KillListener = create_subscription<pancake::msg::Kill>(
-            "/pancake/client/kill", 10, [](const pancake::msg::Kill& kill) {
-                if (kill.kill) {
+        m_KillListener = create_subscription<std_msgs::msg::Bool>(
+            "/pancake/client/kill", 10, [](const std_msgs::msg::Bool& kill) {
+                if (kill.data) {
                     throw std::runtime_error("Client sent kill command!");
                 }
             });
@@ -275,56 +282,54 @@ namespace pancake::swerve {
         }
     }
 
-    rclcpp::Service<pancake::srv::PIDSVA>::SharedPtr Swerve::CreateModuleGainService(
-        const std::string& path, MotorConstants<float>* constants) {
-        auto callback = std::bind(&Swerve::ModuleGains, this, constants, std::placeholders::_1,
-                                  std::placeholders::_2);
+    std::unique_ptr<TuningService> Swerve::CreateTuningService(const std::string& path,
+                                                               MotorConstants<float>* constants) {
+        auto service = std::make_unique<TuningService>();
+        service->Constants = constants;
 
-        return create_service<pancake::srv::PIDSVA>(path, callback, 10);
+        auto ptr = service.get();
+
+        service->PIDPublisher = create_publisher<pancake::msg::PID>(path + "/pid/get", 10);
+        service->PIDSubscriber = create_subscription<pancake::msg::PID>(
+            path + "/pid/set", 10, [this, ptr](const pancake::msg::PID& pid) { SetPID(ptr, pid); });
+
+        service->SVAPublisher = create_publisher<pancake::msg::SVA>(path + "/sva/get", 10);
+        service->SVASubscriber = create_subscription<pancake::msg::SVA>(
+            path + "/sva/set", 10, [this, ptr](const pancake::msg::SVA& sva) { SetSVA(ptr, sva); });
+
+        return service;
     }
 
-    void Swerve::ModuleGains(MotorConstants<float>* constants,
-                             std::shared_ptr<pancake::srv::PIDSVA_Request> request,
-                             std::shared_ptr<pancake::srv::PIDSVA_Response> response) {
-        if (request->set) {
-            RCLCPP_INFO(get_logger(), "Setting gains:");
+    void Swerve::SetPID(TuningService* service, const pancake::msg::PID& pid) {
+        auto& dst = service->Constants->Feedback;
 
-            constants->Feedforward.Sign = request->sva.s;
-            constants->Feedforward.Velocity = request->sva.v;
-            constants->Feedforward.Acceleration = request->sva.a;
+        dst.Proportional = pid.p;
+        dst.Integral = pid.i;
+        dst.Derivative = pid.d;
 
-            RCLCPP_INFO(get_logger(), "S: %f", request->sva.s);
-            RCLCPP_INFO(get_logger(), "V: %f", request->sva.v);
-            RCLCPP_INFO(get_logger(), "A: %f", request->sva.a);
+        service->PIDPublisher->publish(pid);
 
-            constants->Feedback.Proportional = request->pid.p;
-            constants->Feedback.Integral = request->pid.i;
-            constants->Feedback.Derivative = request->pid.d;
+        RetuneModules();
+    }
 
-            RCLCPP_INFO(get_logger(), "P: %f", request->pid.p);
-            RCLCPP_INFO(get_logger(), "I: %f", request->pid.i);
-            RCLCPP_INFO(get_logger(), "D: %f", request->pid.d);
+    void Swerve::SetSVA(TuningService* service, const pancake::msg::SVA& sva) {
+        auto& dst = service->Constants->Feedforward;
 
-            const auto& modules = m_Drivetrain->GetModules();
-            const auto& config = m_Drivetrain->GetConfig();
+        dst.Sign = sva.s;
+        dst.Velocity = sva.v;
+        dst.Acceleration = sva.a;
 
-            for (const auto& module : modules) {
-                module.Module->Retune(config.Drive.Constants, config.Rotation.Constants);
-            }
+        service->SVAPublisher->publish(sva);
 
-            response->pid = request->pid;
-            response->sva = request->sva;
-            response->ack = true;
-        } else {
-            RCLCPP_INFO(get_logger(), "Returning constants");
+        RetuneModules();
+    }
 
-            response->sva.s = constants->Feedforward.Sign;
-            response->sva.v = constants->Feedforward.Velocity;
-            response->sva.a = constants->Feedforward.Acceleration;
+    void Swerve::RetuneModules() {
+        const auto& config = m_Drivetrain->GetConfig();
+        const auto& modules = m_Drivetrain->GetModules();
 
-            response->pid.p = constants->Feedback.Proportional;
-            response->pid.i = constants->Feedback.Integral;
-            response->pid.d = constants->Feedback.Derivative;
+        for (const auto& module : modules) {
+            module.Module->Retune(config.Drive.Constants, config.Rotation.Constants);
         }
     }
 }; // namespace pancake::swerve

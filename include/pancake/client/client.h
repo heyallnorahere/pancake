@@ -2,7 +2,6 @@
 #include <rclcpp/node.hpp>
 
 #include "pancake/client/view.h"
-#include "pancake/msg/kill.hpp"
 
 // no SDL header in client.h
 struct SDL_Window;
@@ -60,7 +59,7 @@ namespace pancake::client {
 
         rclcpp::TimerBase::SharedPtr m_Timer;
         rclcpp::Publisher<pancake::msg::Input>::SharedPtr m_Publisher;
-        rclcpp::Publisher<pancake::msg::Kill>::SharedPtr m_SoftwareKill;
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_SoftwareKill;
 
         std::unordered_map<std::string, std::shared_ptr<View>> m_Views;
     };
