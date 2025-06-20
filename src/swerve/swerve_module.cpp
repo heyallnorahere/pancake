@@ -47,9 +47,12 @@ namespace pancake::swerve {
         }
 
         wheelPosition = NormalizeAngle(wheelPosition);
+        float angleDifference = m_Target.WheelAngle - wheelPosition;
 
-        float desiredVelocity =
-            m_Target.WheelAngularVelocity / m_Drive.GearRatio - wheelWellVelocity;
+        // cosine compensation
+        // https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-kinematics.html#cosine-compensation
+        float velocityFactor = std::cos(angleDifference) / m_Drive.GearRatio;
+        float desiredVelocity = m_Target.WheelAngularVelocity * velocityFactor - wheelWellVelocity;
 
         m_RotationController.SetSetpoint(m_Target.WheelAngle);
         m_DriveController.SetSetpoint(desiredVelocity);
@@ -67,8 +70,8 @@ namespace pancake::swerve {
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
         float rotationPID = m_RotationController.Evaluate(wheelPosition);
-        float rotationFeedforward = m_RotationFeedforward.Evaluate(
-            ErrorBound(m_Rotation.GearRatio, m_Target.WheelAngle - wheelPosition));
+        float rotationFeedforward =
+            m_RotationFeedforward.Evaluate(ErrorBound(m_Rotation.GearRatio, angleDifference));
 
         float rotationVoltage = std::clamp(rotationPID + rotationFeedforward,
                                            -m_Rotation.VoltageLimit, m_Rotation.VoltageLimit);
