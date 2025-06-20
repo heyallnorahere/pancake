@@ -14,7 +14,7 @@ namespace pancake::swerve {
 
     struct SwerveMotor {
         std::shared_ptr<rev::SparkMax> Motor;
-        float GearRatio, VoltageLimit;
+        float GearRatio, VoltageLimit, VoltageDeadzone;
         MotorConstants<float> Constants;
     };
 

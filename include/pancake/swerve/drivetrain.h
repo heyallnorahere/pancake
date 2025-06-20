@@ -24,7 +24,7 @@ namespace pancake::swerve {
     struct SwerveFunction {
         MotorConstants<float> Constants;
         float GearRatio;
-        float VoltageLimit;
+        float VoltageLimit, VoltageDeadzone;
     };
 
     class Drivetrain {

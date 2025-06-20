@@ -60,6 +60,10 @@ namespace pancake::swerve {
         float driveVoltage =
             std::clamp(drivePID + driveFeedforward, -m_Drive.VoltageLimit, m_Drive.VoltageLimit);
 
+        if (std::abs(driveVoltage) < m_Drive.VoltageDeadzone) {
+            driveVoltage = 0.f;
+        }
+
         m_Drive.Motor->Setpoint(rev::SetpointType::Voltage, driveVoltage);
 
         float rotationPID = m_RotationController.Evaluate(wheelPosition);
@@ -68,6 +72,11 @@ namespace pancake::swerve {
 
         float rotationVoltage = std::clamp(rotationPID + rotationFeedforward,
                                            -m_Rotation.VoltageLimit, m_Rotation.VoltageLimit);
+
+        if (std::abs(rotationVoltage) < m_Rotation.VoltageDeadzone) {
+            rotationVoltage = 0.f;
+        }
+
         m_Rotation.Motor->Setpoint(rev::SetpointType::Voltage, rotationVoltage);
 
         m_State.WheelAngularVelocity = (driveMotorVelocity - wheelWellVelocity) * m_Drive.GearRatio;
@@ -81,7 +90,7 @@ namespace pancake::swerve {
         const float pi = std::numbers::pi_v<float>;
         float angleDifference = NormalizeAngle(m_Target.WheelAngle - m_State.WheelAngle);
         if (std::abs(angleDifference) > pi / 2.f) {
-            m_Target.WheelAngle -= pi * Signum(m_Target.WheelAngle);
+            m_Target.WheelAngle -= pi * Signum(angleDifference);
             m_Target.WheelAngularVelocity *= -1.f;
         }
     }
