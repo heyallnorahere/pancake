@@ -88,6 +88,9 @@ namespace pancake::swerve {
     private:
         void AddModule(const SwerveModuleDesc& desc);
 
+        Vector2 CalculateLinearVelocity(const SwerveModuleMeta& meta) const;
+        Vector2 CalculateAngularVelocity(const SwerveModuleMeta& meta) const;
+
         std::vector<SwerveModuleMeta> m_Modules;
         Config m_Config;
 
