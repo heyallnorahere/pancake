@@ -234,21 +234,27 @@ namespace pancake::swerve {
     }
 
     void Swerve::Update() {
-        static auto lastLog = std::chrono::high_resolution_clock::now();
-        auto now = std::chrono::high_resolution_clock::now();
+        // update the drivetrain
+        {
+            static auto lastLog = std::chrono::high_resolution_clock::now();
+            auto now = std::chrono::high_resolution_clock::now();
 
-        if (now - lastLog > 1s) {
-            RCLCPP_INFO(get_logger(), "Swerve node is alive");
-            lastLog = now;
+            if (now - lastLog > 1s) {
+                RCLCPP_INFO(get_logger(), "Swerve node is alive");
+                lastLog = now;
+            }
+
+            // std::chrono::duration<float> is a decimal second duration
+            auto delta = std::chrono::duration_cast<std::chrono::duration<float>>(
+                now - m_LastUpdate.value_or(now));
+
+            m_LastUpdate = now;
+            m_Drivetrain->Update(delta);
         }
 
-        auto delta = now - m_LastUpdate.value_or(now);
-        m_LastUpdate = now;
-        m_Drivetrain->Update(std::chrono::duration_cast<std::chrono::duration<float>>(delta));
+        // from here on is telemetry to the client
 
         const auto& odometry = m_Drivetrain->GetOdometry();
-        RCLCPP_INFO(get_logger(), "Rotation: %f degrees",
-                    odometry.transform.rotation * 180.f / std::numbers::pi_v<float>);
         m_OdometryPublisher->publish(odometry);
 
         const auto& modules = m_Drivetrain->GetModules();

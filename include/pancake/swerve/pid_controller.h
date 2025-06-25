@@ -9,12 +9,18 @@ namespace pancake::swerve {
         // Integral coefficient (proportional)
         _Ty Integral;
 
-        // Derivative (in s^2 units)
+        // Derivative coefficient (in s^2 units)
         _Ty Derivative;
     };
 
     enum class IntegrationType { RightRiemann, LeftRiemann };
 
+    /*
+     * Controller object that adjusts voltage fed to the device based on the error between the
+     * desired setpoint and the actual output.
+     * 
+     * Used with motor controllers primarily, however it can be used to tune any number of controls.
+     */
     template <typename _Ty>
     class PIDController {
     public:
@@ -38,6 +44,9 @@ namespace pancake::swerve {
             ValidateSampleCount();
         }
 
+        /*
+         * Sets the limits of the integral term in Evaluate(_Ty, IntegrationType)
+         */
         inline void SetIntegralBound(const std::tuple<_Ty, _Ty>& bound) {
             _Ty min = std::get<0>(bound);
             _Ty max = std::get<1>(bound);
@@ -49,15 +58,30 @@ namespace pancake::swerve {
             m_IntegralBound = bound;
         }
 
-        inline void SetErrorBound(const std::function<_Ty(_Ty)>& bound) {
-            m_ErrorBound = bound;
-        }
+        /*
+         * Sets the callback to bound the error on evaluation.
+         * This is used for applications such as angle, when there is a clear -2pi to 2pi limit.
+         */
+        inline void SetErrorBound(const std::function<_Ty(_Ty)>& bound) { m_ErrorBound = bound; }
 
+        /*
+         * Sets the goal value of the PID controller.
+         */
         inline void SetSetpoint(_Ty setpoint) { m_Setpoint = setpoint; }
+
+        /*
+         * Returns the goal value of the PID controller.
+         */
         inline _Ty GetSetpoint() const { return m_Setpoint; }
 
+        /*
+         * Evaluates the PID controller.
+         * Provide the instantaneous measurement of the output.
+         * Returns the value to send to the device.
+         */
         inline _Ty Evaluate(_Ty measurement,
                             IntegrationType integration = IntegrationType::RightRiemann) {
+            // add the 
             Sample sample;
             sample.Value = measurement;
             sample.Timestamp = std::chrono::high_resolution_clock::now();
@@ -98,8 +122,7 @@ namespace pancake::swerve {
                     integral += lastError * delta.count();
                     break;
                 default:
-                    // idk
-                    break;
+                    throw std::runtime_error("Invalid integration type!");
                 }
 
                 _Ty min = std::get<0>(m_IntegralBound) / m_PID.Integral;
@@ -117,14 +140,14 @@ namespace pancake::swerve {
         }
 
     private:
+        // clamps m_Samples to m_MaxSamples elements. removes elements from the front if necessary.
         inline void ValidateSampleCount() {
             if (m_Samples.size() <= m_MaxSamples) {
                 return;
             }
 
             auto begin = m_Samples.begin();
-            auto end = begin;
-            std::advance(end, m_Samples.size() - m_MaxSamples);
+            auto end = begin + (m_Samples.size() - m_MaxSamples);
 
             m_Samples.erase(begin, end);
         }
@@ -138,7 +161,8 @@ namespace pancake::swerve {
         _Ty m_Setpoint;
         std::tuple<_Ty, _Ty> m_IntegralBound;
 
-        std::vector<Sample> m_Samples;
+        // we want an iterable queue of samples. constant time insertion and removal :3c
+        std::list<Sample> m_Samples;
         size_t m_MaxSamples;
 
         std::optional<std::function<_Ty(_Ty)>> m_ErrorBound;

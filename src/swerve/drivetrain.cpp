@@ -39,46 +39,68 @@ namespace pancake::swerve {
     }
 
     void Drivetrain::Update(const std::chrono::duration<float>& delta) {
+        // update sim handlers, if there are any
         for (const auto& handler : m_SimHandlers) {
             handler->Update(delta);
         }
 
+        // data from swerve request
         Vector2 requestedLinearVelocity;
         requestedLinearVelocity.X = m_Request.velocity.x;
         requestedLinearVelocity.Y = m_Request.velocity.y;
+        float requestedAngularVelocity = m_Request.velocity.angular_velocity;
 
+        // reset instantaneous odometry
         m_Odometry.velocity.x = 0.f;
         m_Odometry.velocity.y = 0.f;
         m_Odometry.velocity.angular_velocity = 0.f;
 
         for (const auto& meta : m_Modules) {
             float centerOffsetAngle = std::atan2(meta.CenterOffset.Y, meta.CenterOffset.X);
+
+            // v = omega * R
             float distanceToCenter = meta.CenterOffset.Length();
+            float desiredRotationalLinear = requestedAngularVelocity * distanceToCenter;
 
-            // radians/s * m = m/s around arc
-            float angularRotationVelocity = m_Request.velocity.angular_velocity * distanceToCenter;
-            float moduleRotation = meta.RotationalOffset;
-
+            // offset from up on the left stick to the forward vector on the module
+            float controllerSpaceRotation = meta.RotationalOffset;
             if (m_Request.absolute) {
-                moduleRotation += m_Odometry.transform.rotation;
+                // if the speed request is absolute, then the left stick is talking in terms of the
+                // field, not the robot heading
+                controllerSpaceRotation += m_Odometry.transform.rotation;
             }
 
-            // these vectors are in module space
-            Vector2 relativeLinear = requestedLinearVelocity.Rotate(-moduleRotation);
-            Vector2 relativeAngular = Vector2(0.f, angularRotationVelocity)
-                                          .Rotate(centerOffsetAngle - meta.RotationalOffset);
+            // convert the requested linear velocity to module space
+            // rotate the vector so that +x is on the module's x axis
+            Vector2 relativeLinear = requestedLinearVelocity.Rotate(-controllerSpaceRotation);
+
+            // +y in module space is in the +theta direction (counter-clockwise).
+            // however, this vector is in the rotation space of the cartesian theta angle of the
+            // vector offset from the robot's center of rotation. we need to rotate it so that its
+            // completely in module space
+            float offsetDifference = meta.RotationalOffset - centerOffsetAngle;
+            Vector2 relativeAngular =
+                Vector2(0.f, desiredRotationalLinear).Rotate(-offsetDifference);
+
+            // total desired module space velocity vector
             Vector2 relativeVelocity = relativeLinear + relativeAngular;
 
-            auto time = std::chrono::system_clock::now().time_since_epoch();
-            auto seconds = std::chrono::duration_cast<std::chrono::duration<float>>(time);
-
+            // v = omega * R
+            // omega = v/R
             float moduleVelocity = relativeVelocity.Length();
-            ModuleState target;
-            target.WheelAngularVelocity = moduleVelocity / m_Config.WheelRadius;
-            target.WheelAngle = moduleVelocity < std::numeric_limits<float>::epsilon()
-                                    ? meta.Module->GetState().WheelAngle
-                                    : std::atan2(relativeVelocity.Y, relativeVelocity.X);
+            float moduleAngularVelocity = moduleVelocity / m_Config.WheelRadius;
 
+            // convert module linear velocity from x,y to theta,r
+            ModuleState target;
+            if (moduleVelocity < std::numeric_limits<float>::epsilon()) {
+                target.WheelAngularVelocity = 0.f;
+                target.WheelAngle = meta.Module->GetState().WheelAngle;
+            } else {
+                target.WheelAngularVelocity = moduleAngularVelocity;
+                target.WheelAngle = std::atan2(relativeVelocity.Y, relativeVelocity.X);
+            }
+
+            // update module
             meta.Module->SetTarget(target);
             meta.Module->Update();
 

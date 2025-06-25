@@ -30,10 +30,20 @@ namespace pancake::swerve {
         float GearRatio;
     };
 
+    /*
+     * Controls a set of two motors that operate one swerve module.
+     * 
+     */
     class SwerveModule {
     public:
+        /*
+         * Normalizes an angle to the range -pi to pi.
+         */
         static float NormalizeAngle(float angle);
 
+        /*
+         * Creates a new instance. This object does not need to know if it's in a simulation or not.
+         */
         SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
                      const RotationEncoderConfig& encoderConfig);
         ~SwerveModule() = default;
@@ -41,12 +51,29 @@ namespace pancake::swerve {
         SwerveModule(const SwerveModule&) = delete;
         SwerveModule& operator=(const SwerveModule&) = delete;
 
+        /*
+         * Periodic update of module.
+         */
         void Update();
+
+        /*
+         * Sets the desired state of the module. (internal: see m_Target)
+         */
         void SetTarget(const ModuleState& target);
 
+        /*
+         * Returns the CURRENT state of the module.
+         */
         const ModuleState& GetState() const { return m_State; }
+
+        /*
+         * Returns the DESIRED state of the module.
+         */
         const ModuleState& GetTarget() const { return m_Target; }
 
+        /*
+         * Updates the tuning constants. (PID & SVA)
+         */
         void Retune(const MotorConstants<float>& drive, const MotorConstants<float>& rotation);
 
     private:

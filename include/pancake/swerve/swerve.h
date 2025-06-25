@@ -18,6 +18,9 @@ namespace pancake::swerve {
         rclcpp::Subscription<pancake::msg::SVA>::SharedPtr SVASubscriber;
     };
 
+    /*
+     * Swerve ROS node. Performs all drivetrain operations.
+     */
     class Swerve : public rclcpp::Node {
     public:
         Swerve(bool sim = false);
@@ -27,13 +30,24 @@ namespace pancake::swerve {
         Swerve& operator=(const Swerve&) = delete;
 
     private:
+        /*
+         * Periodic update. Runs every 20ms
+         */
         void Update();
 
+        /*
+         * Create interface to tune PID and SVA values on the fly.
+         */
         std::unique_ptr<TuningService> CreateTuningService(const std::string& path,
                                                            MotorConstants<float>* constants);
 
+        // callbacks for network tuning
         void SetPID(TuningService* service, const pancake::msg::PID& pid);
         void SetSVA(TuningService* service, const pancake::msg::SVA& sva);
+
+        /*
+         * Pass new tuning values to swerve modules.
+         */
         void RetuneModules();
 
         std::shared_ptr<Drivetrain> m_Drivetrain;

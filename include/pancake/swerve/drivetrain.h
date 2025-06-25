@@ -27,6 +27,11 @@ namespace pancake::swerve {
         float VoltageLimit, VoltageDeadzone;
     };
 
+    /*
+     * Manages the position and targets of swerve modules.
+     * This is the highest "swerve" class and should be instantiated as part of the robot behavior.
+     * Receives swerve requests and changes targets of swerve modules accordingly.
+     */
     class Drivetrain {
     public:
         struct Config {
@@ -43,17 +48,41 @@ namespace pancake::swerve {
         Drivetrain(const Drivetrain&) = delete;
         Drivetrain& operator=(const Drivetrain&) = delete;
 
+        /*
+         * Requests a target trajectory of the drivetrain.
+         */
         void SetRequest(const pancake::msg::SwerveRequest& request);
+
+        /*
+         * Resets the odometry state to the provided state, or the default if none is provided.
+         */
         void ResetOdometry(const std::optional<pancake::msg::OdometryState>& state = {});
 
+        /*
+         * Periodic update. Should be run often enough to reasonably control drivetrain.
+         * delta: Interval since last update. For first call, set to 0.
+         */
         void Update(const std::chrono::duration<float>& delta);
 
+        /*
+         * Returns information on the robot's position, heading, and velocities.
+         */
         const pancake::msg::OdometryState& GetOdometry() const { return m_Odometry; }
+
+        /*
+         * Returns metadata and control objects of swerve modules.
+         */
         const std::vector<SwerveModuleMeta>& GetModules() const { return m_Modules; }
 
-        float GetWheelRadius() const { return m_Config.WheelRadius; }
-
+        /*
+         * Returns a reference to the drivetrain config.
+         * Use with caution: modification of values may not reflect behavioral updates.
+         */
         Config& GetConfig() { return m_Config; }
+
+        /*
+         * Returns an immutable to the drivetrain config.
+         */
         const Config& GetConfig() const { return m_Config; }
 
     private:

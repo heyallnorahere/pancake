@@ -6,6 +6,10 @@ namespace pancake::swerve {
         _Ty Sign, Velocity, Acceleration;
     };
 
+    /*
+     * Controller object that feeds voltage based off of desired velocity and acceleration. Does not
+     * take any data from feedback sensors.
+     */
     template <typename _Ty>
     class Feedforward {
     public:
