@@ -38,7 +38,7 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     fi
 fi
 
-apt-get install -y libpython3-dev:$TARGETARCH liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH
+apt-get install --no-install-recommends -y libpython3.13-dev:$TARGETARCH liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH
 if [[ $? -ne 0 ]]; then
     exit 1
 fi
@@ -47,7 +47,12 @@ echo "Downloading ROS2 ($TARGETOS/$TARGETARCH $DISTRO)"
 curl -L $(cat $SCRIPTDIR/ros.json | jq -r ".$DISTRO.$TARGETOS.$TARGETARCH") -o $DISTRO.tar.bz2
 
 echo "Extracting ROS2"
-tar -xf $DISTRO.tar.bz2 -C /opt/ros/$DISTRO --strip-components=1
-rm $DISTRO.tar.bz2
+mkdir -p /opt/ros/$DISTRO
 
+tar -xf $DISTRO.tar.bz2 -C /opt/ros/$DISTRO --strip-components=1
+if [[ $? -ne 0 ]]; then
+    exit 1
+fi
+
+rm $DISTRO.tar.bz2
 echo "Build environment set up!"
