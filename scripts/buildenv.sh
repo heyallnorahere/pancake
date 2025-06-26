@@ -38,7 +38,7 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
         exit 1
     fi
 
-    apt-get install --no-install-recommends -y libpython3-dev:$TARGETARCH liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog1.15:$TARGETARCH libssl-dev:$TARGETARCH
+    apt-get install --no-install-recommends -y libpython3-dev:$TARGETARCH liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH libssl-dev:$TARGETARCH
     if [[ $? -ne 0 ]]; then
         exit 1
     fi
