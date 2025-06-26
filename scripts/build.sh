@@ -22,6 +22,7 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH=/usr/$COMPILERARCH-linux-gnu"
 fi
 
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 source /opt/ros/$DISTRO/setup.bash
 colcon build --cmake-args $CMAKE_ARGS
 

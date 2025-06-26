@@ -1,9 +1,10 @@
 ARG DISTRO=jazzy
-FROM --platform=$BUILDPLATFORM debian:trixie AS build
+FROM --platform=$BUILDPLATFORM ros:${DISTRO} AS build
 SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake
 COPY scripts scripts
+COPY docker/sources.list.d docker/sources.list.d
 
 ARG TARGETOS
 ARG TARGETARCH
