@@ -38,7 +38,7 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
         exit 1
     fi
 
-    apt-get install -y libpython3-dev:$TARGETARCH=3.12.3-1ubuntu0.5 liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH
+    apt-get install -y libpython3-dev:$TARGETARCH=3.12.3-1 liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH
     if [[ $? -ne 0 ]]; then
         exit 1
     fi
