@@ -31,6 +31,11 @@ if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     if [[ $? -ne 0 ]]; then
         exit 1
     fi
+
+    apt-get update
+    if [[ $? -ne 0 ]]; then
+        exit 1
+    fi
 fi
 
 apt-get install -y libpython3-dev:$TARGETARCH liblttng-ust-dev:$TARGETARCH libyaml-dev:$TARGETARCH libspdlog-dev:$TARGETARCH
