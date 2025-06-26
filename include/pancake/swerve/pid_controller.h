@@ -98,8 +98,12 @@ namespace pancake::swerve {
             _Ty derivative = (_Ty)0;
 
             for (size_t i = 0; i < intervalCount; i++) {
-                const auto& lastSample = m_Samples[i];
-                const auto& currentSample = m_Samples[i + 1];
+                auto it = m_Samples.begin();
+                std::advance(it, i);
+                const auto& lastSample = *it;
+
+                it++;
+                const auto& currentSample = *it;
 
                 _Ty lastError = m_Setpoint - lastSample.Value;
                 _Ty currentError = m_Setpoint - currentSample.Value;
@@ -147,7 +151,8 @@ namespace pancake::swerve {
             }
 
             auto begin = m_Samples.begin();
-            auto end = begin + (m_Samples.size() - m_MaxSamples);
+            auto end = begin;
+            std::advance(end, m_Samples.size() - m_MaxSamples);
 
             m_Samples.erase(begin, end);
         }

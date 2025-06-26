@@ -58,7 +58,7 @@ namespace pancake::swerve {
         // cosine compensation
         // https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-kinematics.html#cosine-compensation
         float angleDifference = m_Target.WheelAngle - wheelPosition;
-        float cosAngleDifference = std::cos(cosAngleDifference);
+        float cosAngleDifference = std::cos(angleDifference);
 
         // calculate setpoint for drive PID controller
         // we compensate for wheel well velocity outside of the gear ratio compensation;

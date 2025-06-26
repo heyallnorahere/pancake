@@ -52,7 +52,7 @@ TEST(swerve, module_targeting) {
     swerve.SetRequest(request);
     swerve.Update(std::chrono::duration_cast<std::chrono::duration<float>>(1ms));
 
-    float wheelRadius = swerve.GetWheelRadius();
+    float wheelRadius = swerve.GetConfig().WheelRadius;
     const auto& modules = swerve.GetModules();
 
     for (const auto& meta : modules) {

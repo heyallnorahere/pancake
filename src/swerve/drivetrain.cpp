@@ -115,15 +115,15 @@ namespace pancake::swerve {
 
             // use the distance along an arc formula to convert the ground velocity of the module to
             // the angular velocity of the wheel
-            float wheelAngularVelocity = moduleVelocity.Length() / m_Config.WheelRadius;
+            float desiredAngularVelocity = moduleVelocity.Length() / m_Config.WheelRadius;
 
             // convert module linear velocity from x,y to theta,r
             ModuleState target;
-            if (wheelAngularVelocity < std::numeric_limits<float>::epsilon()) {
+            if (desiredAngularVelocity < std::numeric_limits<float>::epsilon()) {
                 target.WheelAngularVelocity = 0.f;
                 target.WheelAngle = meta.Module->GetState().WheelAngle;
             } else {
-                target.WheelAngularVelocity = wheelAngularVelocity;
+                target.WheelAngularVelocity = desiredAngularVelocity;
                 target.WheelAngle = std::atan2(moduleVelocity.Y, moduleVelocity.X);
             }
 
