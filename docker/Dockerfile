@@ -1,5 +1,5 @@
 ARG DISTRO=jazzy
-FROM --platform=$BUILDPLATFORM ros:${DISTRO} AS build
+FROM --platform=$BUILDPLATFORM debian:bookworm AS build
 SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake
