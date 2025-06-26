@@ -4,7 +4,6 @@ SHELL [ "/bin/bash", "-c" ]
 
 WORKDIR /pancake
 COPY scripts scripts
-COPY docker/sources.list.d docker/sources.list.d
 
 ARG TARGETOS
 ARG TARGETARCH
