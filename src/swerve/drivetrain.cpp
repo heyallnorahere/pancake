@@ -165,6 +165,9 @@ namespace pancake::swerve {
         std::vector<std::shared_ptr<rev::sim::SparkMaxSim>> handlers;
         if (m_Sim) {
             for (uint8_t id : meta.MotorIDs) {
+                RCLCPP_INFO(rclcpp::get_logger("swerve"), "Creating sim handler for controller: %d",
+                            (uint32_t)id);
+
                 handlers.push_back(std::make_shared<rev::sim::SparkMaxSim>(id));
             }
         }
