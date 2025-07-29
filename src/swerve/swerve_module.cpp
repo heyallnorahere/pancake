@@ -124,12 +124,10 @@ namespace pancake::swerve {
         // subtract 180 degrees and invert the velocity to achieve the same force vector while not
         // forcing the motors to perform unnecessary work
 
-        /*
         if (std::abs(angleDifference) > pi / 2.f) {
             m_Target.WheelAngle -= pi * Signum(angleDifference);
             m_Target.WheelAngularVelocity *= -1.f;
         }
-        */
     }
 
     void SwerveModule::Retune(const MotorConstants<float>& drive,

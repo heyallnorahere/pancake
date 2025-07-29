@@ -140,13 +140,14 @@ namespace pancake::swerve {
             Vector2 robotModuleVelocity;
             robotModuleVelocity.X = moduleVelocityLength * std::cos(robotSpaceWheelAngle);
             robotModuleVelocity.Y = moduleVelocityLength * std::sin(robotSpaceWheelAngle);
-
             auto absoluteModuleVelocity = robotModuleVelocity.Rotate(m_Odometry.transform.rotation);
 
-            m_Odometry.velocity.x += absoluteModuleVelocity.X / m_Modules.size();
-            m_Odometry.velocity.y += absoluteModuleVelocity.Y / m_Modules.size();
-            m_Odometry.velocity.angular_velocity +=
-                absoluteModuleVelocity.Dot(meta.CenterOffset) / m_Modules.size();
+            size_t moduleCount = m_Modules.size();
+            m_Odometry.velocity.x += absoluteModuleVelocity.X / moduleCount;
+            m_Odometry.velocity.y += absoluteModuleVelocity.Y / moduleCount;
+            m_Odometry.velocity.angular_velocity += std::sin(state.WheelAngle) *
+                                                    moduleVelocityLength *
+                                                    meta.CenterOffset.Length() / moduleCount;
         }
 
         m_Odometry.transform.x += m_Odometry.velocity.x * delta.count();
