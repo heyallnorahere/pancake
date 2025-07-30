@@ -8,7 +8,7 @@ ROS_PID=$!
 MAX_TRIES=10
 COUNT=0
 
-GDB_SERVER=pancake-swerve.local:4444
+GDB_SERVER=:4444
 while [[ $COUNT -lt $MAX_TRIES ]]; do
     SWERVE_PID=$(pgrep swerve)
     if [[ $? -eq 0 ]]; then
