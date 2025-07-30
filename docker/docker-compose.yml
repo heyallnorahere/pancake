@@ -4,6 +4,8 @@ services:
     build: .
     restart: unless-stopped
     network_mode: host
+    ports:
+      - "4444:4444"
     volumes:
       - ./config/:/pancake/config/
     devices:

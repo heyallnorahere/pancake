@@ -12,7 +12,7 @@ DOCKERDIR=$(realpath "$SCRIPTDIR/../docker")
 
 COMPILERARCH=$(cat $SCRIPTDIR/platforms.json | jq -r ".Architecture.$TARGETARCH")
 COMPILEROS=$(cat $SCRIPTDIR/platforms.json | jq -r ".OS.$TARGETOS")
-CMAKE_ARGS="-DSDL_VIDEO=OFF"
+CMAKE_ARGS="-DSDL_VIDEO=OFF -DCMAKE_BUILD_TYPE=Debug"
 
 if [[ "$TARGETARCH" != "$BUILDARCH" ]]; then
     CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_SYSTEM_NAME=$COMPILEROS"
