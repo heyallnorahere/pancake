@@ -150,19 +150,6 @@ namespace pancake::swerve {
             m_Odometry.velocity.angular_velocity += std::sin(state.WheelAngle) *
                                                     moduleVelocityLength *
                                                     meta.CenterOffset.Length() / moduleCount;
-
-            const auto& appliedTarget = meta.Module->GetTarget();
-            static const float pi = std::numbers::pi_v<float>;
-
-            auto logger = rclcpp::get_logger("swerve");
-            RCLCPP_INFO(logger, "Module %d:", (int32_t)i);
-            RCLCPP_INFO(logger, "\tCurrent angle: %f deg", state.WheelAngle * 180.f / pi);
-            RCLCPP_INFO(logger, "\tCurrent angular veloctiy: %f deg/s",
-                         state.WheelAngularVelocity * 180.f / pi);
-
-            RCLCPP_INFO(logger, "\tDesired angle: %f deg", appliedTarget.WheelAngle * 180.f / pi);
-            RCLCPP_INFO(logger, "\tDesired angular velocity: %f deg/s",
-                         appliedTarget.WheelAngularVelocity * 180.f / pi);
         }
 
         m_Odometry.transform.x += m_Odometry.velocity.x * delta.count();
