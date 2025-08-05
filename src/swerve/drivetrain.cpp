@@ -40,7 +40,7 @@ namespace pancake::swerve {
         m_Request = request;
 
         // make sure we keep logs
-        DumpRequest(request);
+        // DumpRequest(request);
     }
 
     void Drivetrain::ResetOdometry(const std::optional<pancake::msg::OdometryState>& state) {
@@ -105,7 +105,9 @@ namespace pancake::swerve {
         m_Odometry.velocity.y = 0.f;
         m_Odometry.velocity.angular_velocity = 0.f;
 
-        for (const auto& meta : m_Modules) {
+        for (size_t i = 0; i < m_Modules.size(); i++) {
+            const auto& meta = m_Modules[i];
+
             // calculate velocity vectors
             auto moduleLinear = CalculateLinearVelocity(meta);
             auto moduleAngular = CalculateAngularVelocity(meta);
@@ -148,6 +150,19 @@ namespace pancake::swerve {
             m_Odometry.velocity.angular_velocity += std::sin(state.WheelAngle) *
                                                     moduleVelocityLength *
                                                     meta.CenterOffset.Length() / moduleCount;
+
+            const auto& appliedTarget = meta.Module->GetTarget();
+            static const float pi = std::numbers::pi_v<float>;
+
+            auto logger = rclcpp::get_logger("swerve");
+            RCLCPP_DEBUG(logger, "Module %d:", (int32_t)i);
+            RCLCPP_DEBUG(logger, "\tCurrent angle: %f deg", state.WheelAngle * 180.f / pi);
+            RCLCPP_DEBUG(logger, "\tCurrent angular veloctiy: %f deg/s",
+                         state.WheelAngularVelocity * 180.f / pi);
+
+            RCLCPP_DEBUG(logger, "\tDesired angle: %f deg", appliedTarget.WheelAngle * 180.f / pi);
+            RCLCPP_DEBUG(logger, "\tDesired angular velocity: %f deg/s",
+                         appliedTarget.WheelAngularVelocity * 180.f / pi);
         }
 
         m_Odometry.transform.x += m_Odometry.velocity.x * delta.count();

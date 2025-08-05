@@ -204,16 +204,8 @@ namespace pancake::client {
         auto button = (SDL_GamepadButton)event.button;
         auto gamepad = SDL_GetGamepadFromID(event.which);
 
-        const char* buttonName = SDL_GetGamepadStringForButton(button);
-        const char* gamepadName = SDL_GetGamepadName(gamepad);
-
-        RCLCPP_INFO(get_logger(), "%s sent button %s: %s", gamepadName,
-                    event.state == SDL_PRESSED ? "down" : "up", buttonName);
-
         auto id = FindButton(button);
         if (!id.has_value()) {
-            RCLCPP_WARN(get_logger(), "Could not find binding for button: %s", buttonName);
-
             return;
         }
 
@@ -238,16 +230,9 @@ namespace pancake::client {
         auto axis = (SDL_GamepadAxis)event.axis;
         auto gamepad = SDL_GetGamepadFromID(event.which);
 
-        const char* axisName = SDL_GetGamepadStringForAxis(axis);
-        RCLCPP_INFO(get_logger(), "Axis %s: %f", axisName,
-                    (float)event.value / std::numeric_limits<int16_t>::max());
-
         size_t index;
         auto id = FindAxis(axis, index);
         if (!id.has_value()) {
-            const char* axisName = SDL_GetGamepadStringForAxis(axis);
-            RCLCPP_WARN(get_logger(), "Could not get binding for axis: %s", axisName);
-
             return;
         }
 
