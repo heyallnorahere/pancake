@@ -158,11 +158,11 @@ namespace pancake::swerve {
         config.Network = "can0";
         config.WheelRadius = 1.5f * 0.0254f; // in meters
         config.Drive.GearRatio = 2.f / 5.f;
-        config.Rotation.GearRatio = -1.f / 48.f;
+        config.Rotation.GearRatio = 1.f / 48.f;
         config.Drive.VoltageLimit = config.Rotation.VoltageLimit = 12.f;
         config.Drive.VoltageDeadzone = config.Rotation.VoltageDeadzone = 0.02f;
         config.EncoderConfig.Mode = RotationEncoderMode::Output;
-        config.EncoderConfig.GearRatio = 1.f;
+        config.EncoderConfig.GearRatio = -1.f;
         config.Features.UseCosineCompensation = true;
 
         auto bus = rev::CanBus::Get(config.Network);
