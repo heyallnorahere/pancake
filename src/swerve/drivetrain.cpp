@@ -155,13 +155,13 @@ namespace pancake::swerve {
             static const float pi = std::numbers::pi_v<float>;
 
             auto logger = rclcpp::get_logger("swerve");
-            RCLCPP_DEBUG(logger, "Module %d:", (int32_t)i);
-            RCLCPP_DEBUG(logger, "\tCurrent angle: %f deg", state.WheelAngle * 180.f / pi);
-            RCLCPP_DEBUG(logger, "\tCurrent angular veloctiy: %f deg/s",
+            RCLCPP_INFO(logger, "Module %d:", (int32_t)i);
+            RCLCPP_INFO(logger, "\tCurrent angle: %f deg", state.WheelAngle * 180.f / pi);
+            RCLCPP_INFO(logger, "\tCurrent angular veloctiy: %f deg/s",
                          state.WheelAngularVelocity * 180.f / pi);
 
-            RCLCPP_DEBUG(logger, "\tDesired angle: %f deg", appliedTarget.WheelAngle * 180.f / pi);
-            RCLCPP_DEBUG(logger, "\tDesired angular velocity: %f deg/s",
+            RCLCPP_INFO(logger, "\tDesired angle: %f deg", appliedTarget.WheelAngle * 180.f / pi);
+            RCLCPP_INFO(logger, "\tDesired angular velocity: %f deg/s",
                          appliedTarget.WheelAngularVelocity * 180.f / pi);
         }
 
