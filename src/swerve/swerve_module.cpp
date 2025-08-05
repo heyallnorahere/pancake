@@ -18,11 +18,13 @@ namespace pancake::swerve {
     }
 
     SwerveModule::SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
-                               const RotationEncoderConfig& encoderConfig)
+                               const RotationEncoderConfig& encoderConfig,
+                               bool useCosineCompensation)
         : m_Drive(drive), m_Rotation(rotation), m_DriveController(drive.Constants.Feedback),
           m_RotationController(rotation.Constants.Feedback),
           m_DriveFeedforward(drive.Constants.Feedforward),
-          m_RotationFeedforward(rotation.Constants.Feedforward), m_EncoderConfig(encoderConfig) {
+          m_RotationFeedforward(rotation.Constants.Feedforward), m_EncoderConfig(encoderConfig),
+          m_UseCosineCompensation(useCosineCompensation) {
         m_Target.WheelAngle = 0.f;
         m_Target.WheelAngularVelocity = 0.f;
 
@@ -54,11 +56,14 @@ namespace pancake::swerve {
 
         // clamp from -pi to pi so that the motors don't do extra work to get to the same position
         wheelPosition = NormalizeAngle(wheelPosition);
-
-        // cosine compensation
-        // https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-kinematics.html#cosine-compensation
         float angleDifference = m_Target.WheelAngle - wheelPosition;
-        float cosAngleDifference = std::cos(angleDifference);
+
+        float cosAngleDifference = 1.f;
+        if (m_UseCosineCompensation) {
+            // cosine compensation
+            // https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-kinematics.html#cosine-compensation
+            cosAngleDifference = std::cos(angleDifference);
+        }
 
         // calculate setpoint for drive PID controller
         // we compensate for wheel well velocity outside of the gear ratio compensation;
@@ -126,6 +131,8 @@ namespace pancake::swerve {
 
         if (std::abs(angleDifference) > pi / 2.f) {
             m_Target.WheelAngle -= pi * Signum(angleDifference);
+            m_Target.WheelAngle = NormalizeAngle(m_Target.WheelAngle);
+
             m_Target.WheelAngularVelocity *= -1.f;
         }
     }

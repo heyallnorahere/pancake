@@ -69,6 +69,10 @@ namespace pancake::swerve {
         }
     }
 
+    void from_json(const nlohmann::json& src, SwerveFeatures& dst) {
+        src["UseCosineCompensation"].get_to(dst.UseCosineCompensation);
+    }
+
     void from_json(const nlohmann::json& src, Drivetrain::Config& dst) {
         src["Network"].get_to(dst.Network);
         src["WheelRadius"].get_to(dst.WheelRadius);
@@ -76,6 +80,7 @@ namespace pancake::swerve {
         src["Rotation"].get_to(dst.Rotation);
         src["Modules"].get_to(dst.Modules);
         src["RotationEncoder"].get_to(dst.EncoderConfig);
+        src["Features"].get_to(dst.Features);
     }
 
     template <typename _Ty>
@@ -130,6 +135,10 @@ namespace pancake::swerve {
         }
     }
 
+    void to_json(nlohmann::json& dst, const SwerveFeatures& src) {
+        dst["UseCosineCompensation"] = src.UseCosineCompensation;
+    }
+
     void to_json(nlohmann::json& dst, const Drivetrain::Config& src) {
         dst["Network"] = src.Network;
         dst["WheelRadius"] = src.WheelRadius;
@@ -137,6 +146,7 @@ namespace pancake::swerve {
         dst["Rotation"] = src.Rotation;
         dst["Modules"] = src.Modules;
         dst["RotationEncoder"] = src.EncoderConfig;
+        dst["Features"] = src.Features;
     }
 
     Swerve::Swerve(bool sim) : Node("swerve") {
@@ -153,6 +163,7 @@ namespace pancake::swerve {
         config.Drive.VoltageDeadzone = config.Rotation.VoltageDeadzone = 0.02f;
         config.EncoderConfig.Mode = RotationEncoderMode::Output;
         config.EncoderConfig.GearRatio = 1.f;
+        config.Features.UseCosineCompensation = true;
 
         auto bus = rev::CanBus::Get(config.Network);
         sim |= !bus->IsOpen();

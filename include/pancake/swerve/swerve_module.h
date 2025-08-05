@@ -32,7 +32,7 @@ namespace pancake::swerve {
 
     /*
      * Controls a set of two motors that operate one swerve module.
-     * 
+     *
      */
     class SwerveModule {
     public:
@@ -45,7 +45,8 @@ namespace pancake::swerve {
          * Creates a new instance. This object does not need to know if it's in a simulation or not.
          */
         SwerveModule(const SwerveMotor& drive, const SwerveMotor& rotation,
-                     const RotationEncoderConfig& encoderConfig);
+                     const RotationEncoderConfig& encoderConfig, bool useCosineCompensation);
+
         ~SwerveModule() = default;
 
         SwerveModule(const SwerveModule&) = delete;
@@ -83,6 +84,7 @@ namespace pancake::swerve {
         PIDController<float> m_DriveController, m_RotationController;
         Feedforward<float> m_DriveFeedforward, m_RotationFeedforward;
         RotationEncoderConfig m_EncoderConfig;
+        bool m_UseCosineCompensation;
 
         std::shared_ptr<rev::Encoder> m_DriveEncoder;
         std::shared_ptr<rev::Encoder> m_RotationEncoder, m_DutyCycleEncoder;

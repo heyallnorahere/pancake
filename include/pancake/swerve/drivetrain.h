@@ -27,6 +27,10 @@ namespace pancake::swerve {
         float VoltageLimit, VoltageDeadzone;
     };
 
+    struct SwerveFeatures {
+        bool UseCosineCompensation;
+    };
+
     /*
      * Manages the position and targets of swerve modules.
      * This is the highest "swerve" class and should be instantiated as part of the robot behavior.
@@ -40,6 +44,7 @@ namespace pancake::swerve {
             SwerveFunction Drive, Rotation;
             std::vector<SwerveModuleDesc> Modules;
             RotationEncoderConfig EncoderConfig;
+            SwerveFeatures Features;
         };
 
         Drivetrain(const Config& config, bool sim);
@@ -81,7 +86,7 @@ namespace pancake::swerve {
         Config& GetConfig() { return m_Config; }
 
         /*
-         * Returns an immutable to the drivetrain config.
+         * Returns an immutable reference to the drivetrain config.
          */
         const Config& GetConfig() const { return m_Config; }
 

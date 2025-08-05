@@ -40,8 +40,4 @@ COPY --from=build /pancake/package.xml .
 ARG DISTRO
 RUN scripts/test.sh ${DISTRO}
 
-# for debugging
-RUN apt-get update
-RUN apt-get install -y gdbserver grep
-
 ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]

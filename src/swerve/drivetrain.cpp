@@ -188,7 +188,8 @@ namespace pancake::swerve {
         rotationMotor.VoltageDeadzone = m_Config.Rotation.VoltageDeadzone;
 
         meta.Module =
-            std::make_shared<SwerveModule>(driveMotor, rotationMotor, m_Config.EncoderConfig);
+            std::make_shared<SwerveModule>(driveMotor, rotationMotor, m_Config.EncoderConfig,
+                                           m_Config.Features.UseCosineCompensation);
 
         m_Modules.push_back(meta);
         m_SimHandlers.insert(m_SimHandlers.end(), handlers.begin(), handlers.end());
