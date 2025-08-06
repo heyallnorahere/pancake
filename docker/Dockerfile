@@ -41,6 +41,6 @@ ARG DISTRO
 RUN scripts/test.sh ${DISTRO}
 
 RUN apt-get update
-RUN apt-get install -y jq
+RUN apt-get install -y jq iproute2
 
 ENTRYPOINT [ "/pancake/scripts/launch.sh", "integrated" ]
