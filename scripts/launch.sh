@@ -1,6 +1,13 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(realpath $(dirname $0))
+CONFIG_DIR=$(realpath $SCRIPT_DIR/../config)
+
+if CAN_NETWORK=$(cat "$CONFIG_DIR/swerve.json" | jq -r ".Network"); then
+    # it gets mad on RPi startup if we dont do this
+    ifconfig $CAN_NETWORK txqueuelen 1000
+fi
+
 source $SCRIPT_DIR/../install/setup.bash
 ros2 launch pancake $1.xml &
 
