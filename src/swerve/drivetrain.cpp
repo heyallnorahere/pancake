@@ -44,6 +44,9 @@ namespace pancake::swerve {
     }
 
     void Drivetrain::ResetOdometry(const std::optional<pancake::msg::OdometryState>& state) {
+        auto logger = rclcpp::get_logger("swerve");
+        RCLCPP_INFO(logger, "Odometry reset");
+
         // reset odometry
         // this mainly just resets the heading of the robot
         m_Odometry = state.value_or(pancake::msg::OdometryState());
