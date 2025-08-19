@@ -1,6 +1,7 @@
 # pancake
 
 Pancake bot.
+
 CAD drawing can be found [here](https://cad.onshape.com/documents/24af23b84924bcae2e494b27/w/7822e903a0ddc4106c8a2e95/e/12f5b05b2e40a2d157e12141).
 
 ## What is this?
@@ -39,33 +40,112 @@ I wanted to find out for myself how easily it was implemented and what concessio
 for practicality.
 
 ## How?
+### Spinning a motor
+#### SOLO
 
-### Motors
+I chose a Raspberry Pi to control the robot for several reasons. It's cheap, supports a widely-used
+operating system, runs on very little power (<1 amp @ 5V), and it does not require an SDK or
+specialized development environment to develop for it. While researching the requirements for this
+project, however, it was very difficult to find any motor controllers that fell within the budget of
+this project while also being guaranteed to work on any CAN-supported computer.
 
-I started with getting a single motor up and running through the Linux socket CAN interface. CAN on
-Linux works by opening a socket on the `canX` network, which `X` being the interface index. This
-allows one to send CAN frames on the electrical CAN network.
+The best candidate I could find that fit both of these criteria was
+[SOLO Motor Controllers](https://solomotorcontrollers.com), based out of Europe. Specifically, their
+UNO v2 controller with its 45A max current. The only issue was that one controller costed 239 euros
+(around 278 USD). Despite the cost, however, this was still the cheapest option that was not
+confined to a proprietary ecosystem. I ordered 2 controllers for testing and development purposes so
+that I could design and build a module while waiting for more to arrive.
+
+SOLO controllers communicate with their controlling devices via CANopen, among other supported
+protocols. I decided to stick with a CAN protocol due to its proliferation in FRC. SOLO provides
+a library in both Python and C++ to communicate with their controllers. I was drawn to using their
+C++ API due to my familiarity with native programming. However, the C++ library was written locked
+to Windows, and my device of choice was running a distrobution of Linux. It's not very feasible to
+install Windows on a Raspberry Pi, nor was embedding Windows an attractive option from a familiarity
+perspective. I had an Intel Nuc that I had installed Windows on, however it was not common to attach
+a CAN interface to a computer through USB, and I was also just aversed to Windows. I had already
+bought a CAN hat for the Raspberry Pi, so the Python API seemed like my best option, as
+uncomfortable as I was with the language.
+
+#### NEO Vortex & NEO 550 motors
+
+The most common type motor in FRC is **brushless DC** (BLDC). These motors generally have high
+torque and top speed. Initially, I planned to drive both the wheel's speed and orientation using the
+same kind of motor, the [NEO Vortex](https://revrobotics.com/rev-21-1652) from REV Robotics. I chose
+this motor because it has a relatively high stall torque, and it is widely used in FRC.
+
+This motor is designed to work with either a [SPARK Flex](https://revrobotics.com/rev-11-2159)
+controller or a [Solo Adapter](https://revrobotics.com/rev-11-2828) together with a
+[SPARK MAX](https://revrobotics.com/rev-11-2158) controller. Due to my previous initial decision of
+using a SOLO controller, I decided to buy 2 of both Vortex motors and Solo Adapters. Before I did
+this, however, I emailed REV Robotics to verify that a Solo Adapter would work with a generic BLDC
+motor controller, to which they affirmed yes. With their confirmation, I ordered the motors and
+adapters.
+
+When the Vortex motors and SOLO controllers arrived, I decided to wire one set up for testing.
+I assembled the motor onto the Solo Adapter, connected the three phase wires to the SOLO controller,
+and and powered the SOLO controller with an oscilloscope power supply. However, I also needed to
+connect the internal encoder to the controller. The encoder allows the computer to receive feedback
+from the motor about how fast it's moving, and how much it's moved since it was powered on. I cut
+the 6-pin JST encoder cable that came with the Solo Adapter to half length, and soldered it to the
+smaller-pitch 6-pin JST cable, using mappings for the cable found on
+[REV's docs](https://docs.revrobotics.com/brushless/spark-max/specs/encoder-port) and the UNO v2
+[user manual](https://solomotorcontrollers.com/wp-content/uploads/materials/SOLO_UNO_v2_SLU0722_5832_UserManual.pdf).
+This allowed me to spin the motor through the controller's UART interface.
+
+When I began designing the module, I realized that for module azimuth, I did not need
+nearly as much torque AND speed as the Vortex provided. In order to minimize both power usage and
+project cost, I replaced the azimuth motor with a [NEO 550](https://revrobotics.com/rev-21-1651)
+motor in my design, and ordered one motor. I also connected the motor to a set of gearboxes which
+decreased its gear ratio to 1:12, increasing its torque while decreasing the speed at which the
+wheel rotates in relation to the motor's speed. This can be easily accounted for in code.
+
+#### SPARK MAX
+
+As I was noticing the corner of unfamiliarity I was backing myself into with my developing tech
+stack, I decided to send an email to REV Robotics concerning the API for their proprietary motor
+controller, the SPARK MAX. I was familiar with this controller due to my experience programming on
+an FRC team. This seemed like an amazing alternative to SOLO due to its much cheaper cost of 90 USD.
+I asked if there was a library for desktop development environments that I had missed for
+communicating with their motor controllers, or if they could provide me with the CAN protocol details
+if they did not have such a library published. To my surprise, they sent me a spreadsheet describing
+the details of SPARK MAX CAN frames. This gave me a viable alternative to the much more expensive
+SOLO controllers.
+
+After careful consideration, I decided to substitute the SOLO controllers for SPARK MAXs. I scrapped
+the Python code that I had written to communicate with the controllers, and I ordered 1 SPARK MAX,
+learning from my mistake previously of ordering 2 controllers to test. It was also convenient that
+the controllers shipped from the US, rather than Italy.
+
+As I now had to write my own API for CAN communication, I was able to write my new stack in a
+language I was more familiar with. With Python off the table, I was opting towards C++. I briefly
+considered Java, being both the most common language in FRC and also the language that my team works
+in. However, I would need to waste time working with the Java Native Interface, communicating
+directly with the Linux kernel. This seemed like too much of a hassle in a language that was both
+abstracted from low-level APIs and not my language of choice, so I decided to stick with my comfort
+language: C++.
+
+CAN on Linux works by opening a socket on the `canX` network, with `X` being the interface index.
+This allows one to send CAN frames on the electrical CAN network via the ubiquitous Linux socket
+API. Through Googling I came across this great
+[document](https://kernel.org/doc/Documentation/networking/can.txt) which describes how the socket
+CAN interface is used. This greatly sped up the software development process.
 
 There are many protocols through which functionality is exposed over CAN. The most common one by far
 is CANopen, which is used in industry robotics and medical equipment. FRC, however, has
 [their own CAN protocol](https://docs.wpilib.org/en/stable/docs/software/can-devices/can-addressing.html).
-
-However, this does not explain, on its own, how to communicate with one specific kind of motor
-controller. Due to the proprietary nature of the REV Robotics SPARK MAX motor controllers which I
-was using, the details of the CAN API which they speak is not public.
-
-Still, I emailed REV Robotics and politely asked for details on the CAN protocol that the SPARK MAX
-motor controllers spoke in. Thankfully, they obliged, and allowed me access to a spreadsheet of CAN
-IDs. This allowed me to implement my own client to speak to SPARK MAX controllers over CAN.
+Even so, this specification does not explain on its own how to communicate with one specific kind of
+motor controller. This in combination with the spreadsheet that REV support shared with me made it
+possible for me to begin working on my own library to communicate with SPARK MAX controllers.
 
 After much writing, debugging, and emailing, I was able to write my own vendor library to control
 DC/BLDC motors through SPARK MAX controllers. However, REV stipulated that I cannot share the
 details of the CAN spec, so the `vendor/librevfree` submodule (the library that I wrote to interface
 with the motor controllers) is not made public.
 
-I had issues with motor controllers later down the road. I continued to commit to the library as I
-was developing the robot. It's very hard to write a library and use it without finding issues at a
-later point.
+I had issues with motor controllers later down the road. Accordingly, I continued to commit to the
+library as I was developing the robot. It's very hard to write your own library and use it without
+finding issues.
 
 (Everything past this point is frankensteined together. I'm still writing.)
 
