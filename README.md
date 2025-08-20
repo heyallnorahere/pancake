@@ -147,6 +147,128 @@ I had issues with motor controllers later down the road. Accordingly, I continue
 library as I was developing the robot. It's very hard to write your own library and use it without
 finding issues.
 
+### Software development
+
+FRC relies upon a proprietary control system integrated with an NI roboRIO. It sends signals through
+the control client to dictate which WPILib routines run on the roboRIO ("Teleop" or "Autonomous")
+during various phases of each FRC match. It also handles controller input during the teleoperated
+mode to allow the user to control the robot directly.
+
+As I was operating in my own development environment, I had none of these luxuries. I had to choose
+how exactly I wanted to design my robot system.
+
+#### Communication via ROS & Docker
+
+Because this project uses a Raspberry Pi, I needed some way to communicate with a control system. I
+used ROS (**R**obot **O**perating **S**ystem) to achieve this. ROS is a tech stack designed for
+interoperation between multiple processes running either on the same computer or multiple in a
+closed system. It natively supports C, C++, and Python, which fit any conceivable use case I had for
+it in this project. 
+
+An ROS application consists of a system of "nodes," individual processes on various devices which
+send arbitrary messages to each other. The ROS message system is identical to FRC's
+publisher/subscriber system, where server nodes send messages on "paths" akin to Unix file paths for
+client nodes to listen to.
+
+ROS is not natively supported on any Linux distributions other than Ubuntu. The Raspberry Pi only
+directly supports its own version of Debian called Raspberry Pi OS, or Raspbian. Although Ubuntu is
+closely related to Debian through its package manager and source tree, the two distributions use
+different package repositories, and for the robot's runtime environment, I wanted the package
+manager system to be as clean as possible, without any hacked-together package manger configuration.
+
+I considered installing Ubuntu on the Raspberry Pi that I mounted onto the robot, however Docker
+seemed like a much better choice. Docker is a background process that runs containerized versions of
+operating systems pre-installed with a desired program. It's useful for "shipping" the *exact*
+runtime environment that you want your program to run in. With Docker, I could control explicitly
+for the runtime environment of my project using my custom-built Docker image.
+
+Docker also allows the image to have controlled access to the host computer's peripheral devices.
+This includes the CAN network and game controllers. Passing through the host networks and input
+devices, I was able to precisely control the methods in which my program could interact with its
+host environment. This is very useful for creating security sandboxes, minimizing the chance that a
+vulnerability in my tech stack could compromise my workflow and the end product.
+
+Deciding to ship my software stack with Docker, I set up a Docker build in my code tree. As I was
+hosting my project's code using a private GitHub repository, I had limited monthly access to GitHub
+Actions, their CI/CD system, a service which runs automated tasks when it receives events. My access
+was limited by job run time, however my builds were infrequent enough that I was able to build the
+Docker image for both x86 and ARM architectures every time that I pushed a commit. As I used CI/CD
+more frequently, and I wanted to control the hardware that it was built on, I began using a desktop
+computer installed with an Ubuntu server to act as an Actions runner for my project, lifting the
+usage restrictions.
+
+#### Cross-compilation
+
+Single-board computers such as the Raspberry Pi run on the ARM CPU architecture. This differs from
+the x86 architecture that most desktop, laptop, and data center machines run on. However, because I
+was developing the project in C++, and the native Linux ELF binaries that C and C++ compile to
+cannot run on architectures they were not compiled for, so I was forced to compile my ROS project
+explicitly for `arm64`. Initially, I emulated the `arm64` architecture during the Docker build via
+QEMU in my CI/CD workflow. However, each build took around 30 minutes due to the compiler overhead
+introduced with C++ templating, and the proliferation of templates in the ROS C++ client library.
+
+The more efficient approach I devised was to segment the Docker build into two stages: `build` and
+`runtime`. The `build` stage runs on the native architecture of the compilation machine, while the
+`runtime` stage runs on the target architecture that the image will be built for. The project is
+cross compiled in the `build` stage using compiler wizardry and
+[shell scripts](scripts/buildenv.sh). After this, the binaries are copied into the `runtime` stage,
+and the robot code can run natively on the Raspberry Pi through the Docker hypervisor.
+
+#### Robot input & SDL
+
+FRC uses conventional game controllers to control competition robots. The most common controllers
+used are those of the Xbox 360, Xbox One, and PS4. These controllers are all supported by
+[SDL](https://github.com/libsdl-org/SDL), a library for GUI applications with real-time input,
+designed for applications such as game development. As I was already familiar with the library's
+usage, I decided to use this library to handle controller input on the robot. It can be built
+headless (without windowing support) using a configuration flag (`-DSDL_VIDEO=OFF`) so that it
+builds in less time without unnecessary features.
+
+I used SDL in an independent `client` ROS node to handle controller input from the user, and pass
+messages along to the `robot` node. I also wrote a simple GUI client in the same `client` node using
+[Dear ImGui](https://github.com/ocornut/imgui) in case the library was built with video support,
+i.e. in desktop environments for simulation and remote control.
+
+#### Drivetrain control
+
+The main meat and potatoes of my application is in the `swerve` ROS node. Receiving messages from
+its controlling `robot` node, it derives motor voltages from the `robot` node's "request" using
+geometric, trigonometric, and physical principles. It then sends CAN messages to the SPARK MAX motor
+controllers, which use their respective motor to produce torque on that motor's axis.
+
+After it sends signals to its motors, it then uses the feedback of velocities reported by
+aforementioned motors' encoders to determine the current velocity of each module. The data collected
+on each module is then uses to determine the linear and angular velocity of the entire robot in
+order to inform how it continues to control each module. All of this data is published back to the
+ROS message system for the `robot` and `client` nodes to use.
+
+#### Automatic updates & bluetooth pairing
+
+Due to the containerized nature of this project through Docker, new versions are easily installed by
+downloading a new image and recreating the container using the newly-downloaded image. Because of
+the simplicity of this process, a project called
+[Watchtower](https://github.com/containrrr/watchtower) exists to automate it. With an option, it
+exposes an HTTP API not unlike a website to allow clients to send HTTP requests to trigger container
+updates.
+
+I wrote another containerized [program](https://github.com/heyallnorahere/robot-util) to expose this
+functionality through a text UI on a $10 20x4 HD44780 I2C LCD screen. It handles automated image
+updates through a menu option which is selectable through a rotary encoder connected to the
+Raspberry Pi's GPIO pins. I wrote this program in C both to stretch myself with a minimalist
+programming language and because the program itself was not inherently object-oriented as the swerve
+drivetrain was. It's containerized with Docker similarly to the actual robot code, and self-updates
+through the same mechanism through which it updates the robot code.
+
+I also created menu items to pair bluetooth devices. This is useful for pairing console controllers,
+as oftentimes these controllers connect to their respective console through bluetooth. Additionally,
+most console controllers have input drivers that have already been integrated into the Linux kernel.
+This allows one to pair a controller to control the robot through the LCD screen, instead of having
+to `ssh` into the Raspberry Pi and pair it manually through `bluetoothctl`.
+
+### Mechanical design
+
+
+
 (Everything past this point is frankensteined together. I'm still writing.)
 
 ## Points of note
@@ -162,40 +284,5 @@ didn't take long to re-print, nor did it greatly inflate the cost of the project
 I also 3D printed the gears inside the modules out of PLA. Initially, I was skeptical of how well
 the gears would hold under torque, but with 100% fill and ABS-infused PLA, they didn't show much
 wear.
-
-### Raspberry Pi 4 Model B & raw CAN frames
-
-Additionally, I wanted to learn how CAN works myself, instead of depending on the vendor libraries
-supplied for the motor controllers I was working with. In order to achieve this, I decided to use
-the low-level Linux socket CAN API to send CAN frames. 
-
-### ROS
-
-Because this project uses a Raspberry Pi, I needed some way to communicate with a control system. I
-used ROS (Robot Operating System) on the `jazzy` distro to achieve this. However, ROS is not
-natively supported on any Linux distributions other than Ubuntu. I considered installing Ubuntu on
-the Raspberry Pi that I mounted onto the robot, however Docker seemed like a better choice. I could
-fine-grain the methods in which the robot code could interact with the host system, and I could
-control for the runtime environment of the project using the shipped Docker container.
-
-### Cross-compiling
-
-Single-board computers such as the Raspberry Pi run on ARM architecture. This differs from the x86
-architecture that most desktop, laptop, and data center machines run on. However, because I was
-developing the project in C++, and ELF binaries cannot run on architectures they were not compiled
-for, I was forced to cross-compile the ROS project somehow. Initially, I emulated the `arm64`
-architecture during the Docker build via QEMU in a CI/CD workflow. However, each build took around
-30 minutes due to the compiler overhead introduced with C++ templating, and the proliferation of
-templates in the ROS C++ client library.
-
-The more efficient approach I figured out was to segment the Docker build into two stages, `build`
-and `runtime`. The build stage runs on the native architecture of the compilation machine, while the
-runtime stage runs on the target architecture that the image will be built for. The project is
-cross compiled in the `build` stage using compiler wizardry and
-[shell scripts](scripts/buildenv.sh). After this, the binaries are copied into the runtime stage,
-and the robot code can run natively on the Raspberry Pi through the Docker hypervisor.
-
-This part took me a good few days of headache. Possibly the best argument for using a pre-built tech
-stack in robotics.
 
 ![Robot](photo.png)
