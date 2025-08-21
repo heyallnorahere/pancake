@@ -97,7 +97,7 @@ When I began designing the module, I realized that for module azimuth, I did not
 nearly as much torque AND speed as the Vortex provided. In order to minimize both power usage and
 project cost, I replaced the azimuth motor with a [NEO 550](https://revrobotics.com/rev-21-1651)
 motor in my design, and ordered one motor. I also connected the motor to a set of gearboxes which
-decreased its gear ratio to 1:12, increasing its torque while decreasing the speed at which the
+decreased its gear ratio by 1:12, increasing its torque while decreasing the speed at which the
 wheel rotates in relation to the motor's speed. This can be easily accounted for in code.
 
 #### SPARK MAX
@@ -259,30 +259,113 @@ programming language and because the program itself was not inherently object-or
 drivetrain was. It's containerized with Docker similarly to the actual robot code, and self-updates
 through the same mechanism through which it updates the robot code.
 
-I also created menu items to pair bluetooth devices. This is useful for pairing console controllers,
-as oftentimes these controllers connect to their respective console through bluetooth. Additionally,
-most console controllers have input drivers that have already been integrated into the Linux kernel.
+I also created menu functionality to pair bluetooth devices. This is useful for pairing console
+controllers, as oftentimes these controllers connect to their respective console through bluetooth.
 This allows one to pair a controller to control the robot through the LCD screen, instead of having
 to `ssh` into the Raspberry Pi and pair it manually through `bluetoothctl`.
 
-### Mechanical design
+### Chassis design
 
+As the goal of this project was to gain experience with all aspects of robot design, I designed the
+entire robot chassis from the ground up. In FRC, it is standard practice to buy manufactured swerve
+modules from hardware vendors (i.e. REV, Swerve Drive Specialties), as the drivetrain is not the
+primary hurdle of robot development. However, my focus was primarily on the intricate design process
+of the *entire* robot, including the swerve modules. These were the first step in robot development.
 
+#### CAD
 
-(Everything past this point is frankensteined together. I'm still writing.)
+Before this project, I had acquired some CAD (**c**omputer-**a**ided **d**esign) experience. In the
+past, I had designed some robotics-adjacent projects with CAD software, however these projects never
+came to fruition. This project seemed like a perfect opportunity to brush up on my CAD skills.
 
-## Points of note
-### Ground-up design of chassis
+The software suite that I chose for this project was Onshape. Onshape is very commonly used in FRC
+design teams, and I had used it in the past with physically-designed projects. It's also very
+feature-complete with an extensible API for creating additional features.
 
-I designed the entire chassis of the robot from the ground up.
+#### Materials
 
-The part of this that took the longest was by far the swerve modules. My unfamiliarity with CAD
-and mechanical design only worsened the mistakes that I made when designing the modules. However,
-all parts (even gears!) of the swerve modules were 3D printed out of either PLA or ABS, and they
-didn't take long to re-print, nor did it greatly inflate the cost of the project.
+The vast majority of mechanical parts in FRC are manufactured out of aluminum. During development, I
+did not have access to a CNC router, so I chose the next best option, which I had plenty of
+experience with: 3D printing. 3D printers can manufacture parts with plastics of varying tensile
+strengths, which gave me confidence in the approach.
 
-I also 3D printed the gears inside the modules out of PLA. Initially, I was skeptical of how well
-the gears would hold under torque, but with 100% fill and ABS-infused PLA, they didn't show much
-wear.
+For parts such as gears that experience large amounts of force over very little surface area, I
+decided to print with ASA (**a**crylonitrile **s**tyrene **a**crylate) filament, a thermoplastic
+commonly used in the manufacturing of mechanical parts. However, as I was prototyping with PLA
+(**p**oly**l**actic **a**cid) infused with ABS (**a**crylonitrile **b**utadiene **s**tyrene), I
+found that parts printed completely filled with plastic held up very well under simulation of the
+stress that they would experience. Drawing from this discovery, I decided to manufacture all parts
+used in the swerve modules and electronics mountings with this blend of PLA and ABS.
+
+I assembled the modules to the rest of the components using custom-cut 20x20 aluminum extrusions.
+These were preferable to long, segmented 3D printed parts because the alternative would not be
+nearly as structurally stable, nor would it be time- or cost-effective in comparison to extrusions.
+
+#### Structure
+
+Due to the flexibility in which one can design parts for 3D printers, and the availability of
+breakaway support material, designing the structure itself was trivial. Each module consists of two
+main plates, supported between each other with 3cm-long printed standoffs. 3D-printed parts are
+extremely strong under compression, which led me to use them as nothing more than spacers, held in
+place by M3x50 bolts on the top and M3 nuts on the bottom.
+
+As the large majority of the module's weight lies on the top plate, it's very important that it's
+adequately supported. With some quick Googling, I determined that PLA plates should be supported
+roughly every 5cm. I shortened this slightly to 4.2cm both for convenience in my design and to
+create a margin for printing and assembly error.
+
+#### Hardware
+
+Wherever possible, I stuck with metric units and bolt sizes. I had quite a lot of M3 hardware lying
+around, so I used M3 whenever I could. However, I had to make some exceptions. To secure the two
+internal drive gears to their respective shafts, I used an M2 bolt threaded through a nut in a small
+pocket on the internal circumfrence of the gear. M3 screws were too large. In my mount for the
+Raspberry Pi, I had to use M2.5 bolts to fit through the RPi's mounting holes. Additionally, all
+FRC-legal parts use #10-32 bolts. In addition to the irritation of using imperial units, I did not
+have any #10-32 hardware in stock.
+
+I mounted each individual part onto the aluminum extrusions which joined the chassis together with
+drop-in M3 T-nuts. On the uncut extrusions which I already had in stock, the T-nuts dropped in
+perfectly. However, when the custom-cut extrusions I ordered from Misumi arrived, the lips on the
+new extrusions did not allow the T-nut to drop in. This created a slight inconvenience whenever I
+added a new part to the chassis, as I had to remove the entire extrusion from the chassis and slide
+the necessary quantity of T-nuts down the shaft.
+
+#### Design details
+
+The module uses two motors in coordination to orient and drive the wheel independently. The module
+is also fitted with a duty cycle encoder to measure the distance from the module's "default"
+position. This allows the motors to control the direction and magnitude of force which the module
+is exerting on the robot's chassis while also sending feedback to the robot's controlling device.
+
+The drive motor has a nearly inconsequential gear ratio because the motor produces a large amount of
+torque on its own. However, I attached two gearboxes to the rotational motor to decrease its gear
+ratio by 1:12. This is further decreased by its 1:4 relation to the output orientation of the wheel,
+which leaves the axis with a gear ratio of 1:48 to maximize torque.
+
+### Electronics
+
+FRC robots run on a nominal voltage of 12 volts. Typical SLA (**s**ealed **l**ead **a**cid)
+batteries as used in FRC generally produce a voltage slightly higher, at 13 volts. To mimic the
+final environment of an SLA battery, I ran motors on a 13V wall power supply while prototyping.
+However, when I attached the modules to a full chassis, I began running the robot off of battery
+power.
+
+The battery is fed into a 120A breaker, common in FRC robots. This creates a hard upper limit for
+the robot's power draw, mitigating the damage of short circuits and stalled motors. It also provides
+a switch to turn the robot on and off immediately, a safer mechanism than simply attaching the
+battery.
+
+All power in the robot runs through a centralized device called a PDH (**P**ower **D**istribution
+**H**ub), another FRC-standard component from the vendor of the motors and controllers I was using,
+REV Robotics. It distributes power to multiple channels, each limited with a fuse or breaker. The
+PDH was also ideal for testing and iteration, with WAGO clips on each channel for both VCC and
+ground, as opposed to permanent crimping or soldering. The battery cables from the breaker run
+directly into the PDH, where it distributes power and limits current draw from each motor.
+
+I used 12AWG wire to connect the motor controllers to the PDH. 12AWG wire is rated for 20A
+continuously, with a fusing current of over 200A. This was ideal for my application, as the maximum
+current between both kinds of motor was 45A, and the force required to move the robot was not
+particularly high. These wires were connected to the motor controllers with WAGO connectors.
 
 ![Robot](photo.png)
