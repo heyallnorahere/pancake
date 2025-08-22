@@ -4,6 +4,9 @@ Pancake bot.
 
 CAD drawing can be found [here](https://cad.onshape.com/documents/24af23b84924bcae2e494b27/w/7822e903a0ddc4106c8a2e95/e/12f5b05b2e40a2d157e12141).
 
+![Robot](images/final.png)
+*final robot*
+
 ## What is this?
 
 This is a robot based on a "swerve" drivetrain as seen in FIRST Robotics Competition (FRC). The goal
@@ -15,7 +18,7 @@ rotate at the same time. This is achieved through independent motion of all "mod
 controls the motion of one wheel. Each module has the capability to both orient its wheel
 independently all of the other wheels and also drive the wheel at the same time. This works with the
 use of 2 motors per wheel - one which drives the speed of the wheel, and one which controls the
-angle at which the wheel applies force. As a result of this design, the robot is able to move in a
+angle at which the wheel applies force. As a result of this design, my robot is able to move in a
 linear direction and rotate concurrently.
 
 Instead of using a roboRIO as robots in FRC do, this project uses a Raspberry Pi. I chose this in
@@ -242,18 +245,21 @@ on each module is then uses to determine the linear and angular velocity of the 
 order to inform how it continues to control each module. All of this data is published back to the
 ROS message system for the `robot` and `client` nodes to use.
 
-#### Automatic updates & bluetooth pairing
+#### Self-updating & bluetooth controller pairing
+
+I wanted this project to have the capability to run without any external computers or monitors. For
+this purpose, I wanted to expose two helpful functions on the actual chassis of the robot:
+self-updating and controller connection.
 
 Due to the containerized nature of this project through Docker, new versions are easily installed by
 downloading a new image and recreating the container using the newly-downloaded image. Because of
 the simplicity of this process, a project called
 [Watchtower](https://github.com/containrrr/watchtower) exists to automate it. With an option, it
-exposes an HTTP API not unlike a website to allow clients to send HTTP requests to trigger container
-updates.
+exposes an HTTP REST API which allows clients to send HTTP requests to trigger container updates.
 
 I wrote another containerized [program](https://github.com/heyallnorahere/robot-util) to expose this
-functionality through a text UI on a $10 20x4 HD44780 I2C LCD screen. It handles automated image
-updates through a menu option which is selectable through a rotary encoder connected to the
+functionality through a text UI on a small $10 20x4 HD44780 I2C LCD screen. It handles automated
+image updates through a menu option which is selectable through a rotary encoder connected to the
 Raspberry Pi's GPIO pins. I wrote this program in C both to stretch myself with a minimalist
 programming language and because the program itself was not inherently object-oriented as the swerve
 drivetrain was. It's containerized with Docker similarly to the actual robot code, and self-updates
@@ -333,6 +339,10 @@ the necessary quantity of T-nuts down the shaft.
 
 #### Design details
 
+For a reference of how swerve modules commonly work, I at the CAD drawing for
+[REV's MAXSwerve module](https://revrobotics.com/rev-21-3005/). As a result, the module was loosely
+based off of this design. I also used their wheels in my design.
+
 The module uses two motors in coordination to orient and drive the wheel independently. The module
 is also fitted with a duty cycle encoder to measure the distance from the module's "default"
 position. This allows the motors to control the direction and magnitude of force which the module
@@ -343,7 +353,14 @@ torque on its own. However, I attached two gearboxes to the rotational motor to 
 ratio by 1:12. This is further decreased by its 1:4 relation to the output orientation of the wheel,
 which leaves the axis with a gear ratio of 1:48 to maximize torque.
 
+![Module CAD](images/cad/module.png)
+*CAD drawing of swerve module*
+
 ### Electronics
+
+Robots need power. A lot of power.
+
+#### Power delivery
 
 FRC robots run on a nominal voltage of 12 volts. Typical SLA (**s**ealed **l**ead **a**cid)
 batteries as used in FRC generally produce a voltage slightly higher, at 13 volts. To mimic the
@@ -366,6 +383,81 @@ directly into the PDH, where it distributes power and limits current draw from e
 I used 12AWG wire to connect the motor controllers to the PDH. 12AWG wire is rated for 20A
 continuously, with a fusing current of over 200A. This was ideal for my application, as the maximum
 current between both kinds of motor was 45A, and the force required to move the robot was not
-particularly high. These wires were connected to the motor controllers with WAGO connectors.
+particularly high. These wires were connected to the motor controllers with WAGO connectors,
+similar to the PDH terminals.
 
-![Robot](photo.png)
+#### Cable management
+
+Due to the mobile nature of this project, I needed to organize cables very neatly to avoid snagging
+on any variation in the surface on which it's driving. Wires snagging on external objects could
+cause power loss and short circuits, which at 12 volts could potentially cause significant damage to
+the robot and its environment.
+
+To simply cable management, I used paired red and black 12AWG cable to deliver power to the motor
+controllers. I also ran cables along the 20x20 extrusions of the chassis' frame to avoid a rat's
+nest in the empty portions of the frame.
+
+I initially considered zipties to fasten cables to the extrusions. However, these are very wasteful,
+with any electrical change creating plastic waste in the form of the previous tie. Because of this,
+I chose to use velcro cable ties, reusable organizational ties which fulfill the same purpose as
+zipties.
+
+## Overarching challenges
+
+**Lack of documentation**. I initially chose SOLO controllers because SPARK MAX controllers,
+although clearly the better alternative, did not have publicly available CAN documentation. Even
+after emailing REV, and working with a spreadsheet of CAN IDs, I still struggled to piece together a
+viable control library. I had to decompile the native roboRIO REV library with
+[Ghidra](https://github.com/NationalSecurityAgency/ghidra) to find memory layouts for status frames
+undocumented in REV's spreadsheet. Additionally, as the new FRC season started in January 2025, REV
+released a new version of firmware which dramatically changed the CAN API. After struggling to find
+any data related to this new firmware version, either through REV support or in decompiled C++ code,
+I opted to use an older version of the controller firmware.
+
+**Iteration times**. C++ code that includes ROS headers took significantly longer to build and
+therefore iterate upon due to the prominent use of templating within the library. I mitigated build
+times by optimizing the build process (i.e. building image on native architecture, minimizing header
+inclusion in code), however each build of my robot code took around 10 minutes. Additionally, when
+designing the robot in CAD, I made several mistakes in designing each part. Most parts in each
+module on either the module's top or bottom plates, and so a part change often meant I had to
+re-print one or both of the plates. Each plate took slightly less an hour to print, so at the worst,
+one print to fix one part took upwards of 2 hours. This combined with reassembly time
+dramatically slowed the build process.
+
+**Module mounting**. The module was just slightly too thick between the top surface of the top
+plate and the bottom surface of the bottom to mount onto aluminum extrusions on the bottom of the
+module with M3x50 bolts. M3x60 bolts were slightly too long to create a strong connection between
+the module and the robot frame, and M3x50 bolts had to be forced into the T-nuts on the bottom. To
+solve this issue, I ordered non-standard M3x55 bolts, which cost significantly more than M3x50s or
+M3x60s and took nearly a week to arrive after I realized the issue, however they were able to create
+a strong mechanical connection when suspended above the bolt's counterbore slot with a washer.
+
+**UltraPlanetary bolt snugness**. The azimuth motor's output is fed through two REV UltraPlanetary
+gearboxes which decrease its gear ratio by 1:12. These gearboxes are fastened to the module and
+motor using 6 M3x30 bolts fed straight through the gearboxes into the motor. The issue with this
+design arises when the bolts are fastened too tightly, and the friction of the system increases
+dramatically. However, when the bolts are not fastened tightly enough, the motor begins shifting as
+torque is applied, damaging the motor over time. Additionally, the bolts loosen very easily. I
+solved this issue by using locktite to lock the bolts in place relative to the motor, gearboxes,
+and module.
+
+**Module inversion**. As I was preparing to test the robot moving on the ground, I noticed that two
+modules were spinning inverted from the direction they should have been spinning in. This bug took
+me 4 days to fix, and was caused by three main things. I had confused the spaces in which the wheel
+well was rotating. I had also normalized an angle incorrectly, leading to incorrect angle values
+when performing math to determine in what direction each module should be spinning. Fixing these two
+issues fixed one module's rotation, however one was still spinning in the wrong direction. This was
+ultimately caused by the duty cycle encoder being calibrated in the opposite direction, which was a
+simple human error. Fixing this final issue removed this roadblock.
+
+**Ubuntu package versions and ROS cross-compilation environment**.
+[ROS does not support native cross-compilation on the latest distribution.](https://github.com/ros-tooling/cross_compile)
+Setting up a cross-compilation environment manually is black-magicky, installing multiple
+architectures of the same development package onto the same "machine" (or in this case, image build
+container). The Python development libraries a prime example of this, breaking each other when
+package versions differ. Unfortunately, the ROS image has this installed by default for the build
+architecture, and attempting to uninstall it in the container will uninstall the rest of ROS.
+Additionally, the Python package in the x86 repository generally gets a version bump a day or two
+before the `arm64` port repository. This makes cross-compilation impossible for the amount of time
+the two versions differ, because the `arm64` version is not installable without the entire
+uninstallation of ROS. Thankfully, this was only an issue once in the development process.
