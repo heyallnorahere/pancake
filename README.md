@@ -44,6 +44,15 @@ for practicality.
 
 ## How?
 ### Spinning a motor
+#### CAN interface
+
+In FRC, CAN is the primary protocol with which the roboRIO interfaces with motors. The Raspberry Pi
+does not come with a native CAN interface, in contrast to the roboRIO's built-in CAN ports. With
+this being said, however, commercial auxiliary CAN hats can extend the Raspberry Pi's hardware
+functionality through the use of the Raspberry Pi's
+[SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) interface, and provide a CAN
+network exposed to user-space Linux programs, such as my robot code.
+
 #### SOLO
 
 I chose a Raspberry Pi to control the robot for several reasons. It's cheap, supports a widely-used
@@ -192,7 +201,7 @@ host environment. This is very useful for creating security sandboxes, minimizin
 vulnerability in my tech stack could compromise my workflow and the end product.
 
 Deciding to ship my software stack with Docker, I set up a Docker build in my code tree. As I was
-hosting my project's code using a private GitHub repository, I had limited monthly access to GitHub
+hosting my project's code using a private Github repository, I had limited monthly access to Github
 Actions, their CI/CD system, a service which runs automated tasks when it receives events. My access
 was limited by job run time, however my builds were infrequent enough that I was able to build the
 Docker image for both x86 and ARM architectures every time that I pushed a commit. As I used CI/CD
@@ -461,3 +470,132 @@ Additionally, the Python package in the x86 repository generally gets a version 
 before the `arm64` port repository. This makes cross-compilation impossible for the amount of time
 the two versions differ, because the `arm64` version is not installable without the entire
 uninstallation of ROS. Thankfully, this was only an issue once in the development process.
+
+## What went well?
+
+**Final product fit within original project parameters**. The overall design of the robot did not
+differ from my original vision when starting the robot. Originally, I was going to use SOLO
+controllers, but I switched to SPARK MAX controllers before mechanically designing the robot in CAD,
+so no major reworks needed to be done.
+
+**FRC skills**. As one of the main stated goals when starting this project, I made sure to design
+the robot as similarly to an FRC bot as I could. This led me to design the robot from the ground-up
+as somebody on the design team would; I connected and organized CAN, power, and encoder wires as one
+on the "systems" team would do; and I assembled the robot from the ground up, gaining me experience
+with the "mech" team process. I also had the opportunity to delve into the FRC-flavored CAN
+protocol, which is a step up from my previous experience on the programming team.
+
+**No major electrical mistakes**. Even though it takes a large voltage to send a dangerous current
+through the human heart due to the resistance from the end of one arm to the other, short circuits
+directly between battery leads are potentially very dangerous. For this reason, I kept all wires
+under fuses when possible, and I kept the PDH unplugged from power while managing wires. Because of
+this, I never had any major electrical incidents while working on the robot. The only mistake that I
+made in this regard was a particularly unfortunate accident when I sent a static shock through the
+CAN hat of the Raspberry Pi and fried the board with a short. The Raspberry Pi was not harmed at
+all, however I had to replace the CAN hat which cost $60 and a week.
+
+**Communication protocol**. ROS supplies a robust real-time communication framework for coordination
+between ROS nodes. This allowed me to easily segment the codebase and handle user input
+independently of drivetrain math and motor control, among other development niceties.
+
+**Automated build process**. As a result of my cloud-based cross-compilation setup, I was able to
+streamline my workflow to automatically build and deploy my code every time I pushed a Git commit.
+This allowed me to push my code to the robot and check in my current code state in one command in
+Neovim, my code editor of choice.
+
+**Self-contained final robot**. Early on in the project, I made the decision to consolidate all
+necessary functions into the robot itself. This includes connection and collection of user input,
+and also code updates. I implemented the self-contained connection of controllers using the Linux
+BlueZ bluetooth stack, and I passed all user input devices through to the Docker container driving
+the robot to be handled by the headless `client` node. I also implemented self-updates using
+`watchtower` in combination with my LCD text UI, thus allowing the user to completely control the
+robot and its software without the use of a shell.
+
+## Lessons learned
+### TRIPLE CHECK
+
+This goes for CAD, programming, electrical work, all of it. Triple check your work! Do not write or
+do something once and call it good. In CAD, make sure that one change in a seemingly unrelated area
+did not break a part somewhere else. In software, unit test areas of code individually and
+iteratively before testing it on the robot. In electrical work, triple check that all wires are
+connected to the right components. All of this will solve so many debugging headaches.
+
+### DONT BE LAZY AND FIX PROBLEMS
+
+I spent too much time twiddling my thumbs while waiting for my robot code to build in Github CI.
+
+[![XKCD 303](https://imgs.xkcd.com/comics/compiling.png)](https://xkcd.com/303/)
+*XKCD 303: Compiling*
+
+Before I sped up the build process by 1. hosting the build on my own server and 2. cross-compiling
+code rather than emulating the compiler with QEMU, I thought, "it can't be helped. I need to just
+keep working while the build finishes." This ultimately exaggerated iteration times and slowed the
+build process.
+
+Finally, I invested time into fixing the build system. With the ~5 hours that it took to get this up
+and running, I had more than made up for the >15 (5 * 60 / (30 - 10)) builds that I had triggered by
+that point. With a 10 minute build time, I was able to iterate at a much faster pace, allowing me to
+dramatically speed up the development process.
+
+### FINALIZE CORE COMPONENTS BEFORE ORDERING
+
+I wasted around slightly less than $600 on SOLO motor controllers. The only reason I found it
+reasonable to spend this much on motor controllers is that they are one of the core components that
+makes this project possible. What I should have done before ordering the SOLO controllers was
+confirm, beyond a shadow of a doubt, that these controllers were the ones that I would use. Although
+it was ultimately beneficial that I emailed REV, I should have done that in the first place before
+deciding on a motor controller.
+
+### NEW TECHNOLOGIES USED
+
+In the process of creating the end product, I introduced myself to quite a few new technologies. To
+name a few, I familiarized myself with CAN for motor communication, the Linux D-Bus for
+communication with the `bluetoothd` daemon, and cross-architecture C and C++ compilers and build
+tools for my cross-compilation Docker toolchain. I also gained a lot of practical experience with
+CAD, which greatly helps any personal and team projects that I might participate in. It is almost
+always beneficial to use new and unfamiliar technologies in non-commercial projects in an effort to
+become more well-rounded as a software developer.
+
+### STAY ON TASK
+
+I spent a few days trying to read data from the PDH over CAN for motor power usage metrics. This did
+not end up proving useful or necessary, nor was it part of the project parameters, and I ultimately
+just wasted my time. I could have used this time to work further towards the material goal of
+finishing the robot.
+
+### SAFETY FIRST AND BEFORE EVERYTHING
+
+The incident with frying the CAN hat easily could have been avoided if I followed electrical safety
+procedures. This happened in May, and it was particularly dry around this time. As a result, I
+easily accumulated static charge by performing basic tasks. In addition to this, I was wearing a
+cashmere hoodie, and my long hair was not tied back. When I went to rearrange CAN wires, I did not
+ground myself before doing so. I accidentally delivered a static shock which stuck the board in a
+configuration state.
+
+I could have avoided this if I took my hoodie off, tied my hair back, and grounded myself before
+working with delicate electrical equipment such as this. Safety procedures exist for a reason.
+
+### DEBUGGING IS BETTER THAN NOTHING
+
+While I was debugging the issue of inverted wheel rotation, I was confident that the issue was
+ultimately in my swerve math. While this was somewhat correct, I was stuck looking over my math code
+for around a day. Finally, I swallowed my pride and brought up a Docker container with `gdb` set up.
+I had initially avoided this because I had only debugged code in an IDE's UI before. Additionally,
+because the Docker build was segmented and the runtime stage did not have the source included in the
+container tree, I had to cross-reference debugger output with my current source tree in Neovim.
+Nonetheless, using a debugger greatly sped up my debugging process, and it likely allowed me to
+solve the issue much quicker than if I had not brought up a debugger. I learned that I need to
+broaden my approach to solving problems, consider new approaches that I had not tried yet, and check
+null hypotheses.
+
+## What's next?
+
+The main feature I would like to implement is autonomous motion on pre-programmed paths, based on
+computer vision. I have experience with this in FRC, using libraries such as
+[PhotonVision](https://github.com/PhotonVision/photonvision) for computer vision, and
+[PathPlanner](https://github.com/mjansen4857/pathplanner) for path generation. These libraries are
+built specifically for FRC, so plug-and-play use in my project is likely unfeasible. Implementing
+motion along paths seems to be easily achievable with my experience with the library. Additionally,
+the University of Michigan provides a native, open-source
+[library for detecting April Tags](https://github.com/AprilRobotics/apriltag), the specification of
+fiducial tags used in FRC. With both of these components, this feature seems completely feasible.
