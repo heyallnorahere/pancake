@@ -72,10 +72,10 @@ SOLO controllers communicate with their controlling devices via CANopen, among o
 protocols. I decided to stick with a CAN protocol due to its proliferation in FRC. SOLO provides
 a library in both Python and C++ to communicate with their controllers. I was drawn to using their
 C++ API due to my familiarity with native programming. However, the C++ library was written locked
-to Windows, and my device of choice was running a distrobution of Linux. It's not very feasible to
+to Windows, and my device of choice was running a distribution of Linux. It's not very feasible to
 install Windows on a Raspberry Pi, nor was embedding Windows an attractive option from a familiarity
 perspective. I had an Intel Nuc that I had installed Windows on, however it was not common to attach
-a CAN interface to a computer through USB, and I was also just aversed to Windows. I had already
+a CAN interface to a computer through USB, and I was also just averse to Windows. I had already
 bought a CAN hat for the Raspberry Pi, so the Python API seemed like my best option, as
 uncomfortable as I was with the language.
 
@@ -96,10 +96,10 @@ adapters.
 
 When the Vortex motors and SOLO controllers arrived, I decided to wire one set up for testing.
 I assembled the motor onto the Solo Adapter, connected the three phase wires to the SOLO controller,
-and and powered the SOLO controller with an oscilloscope power supply. However, I also needed to
-connect the internal encoder to the controller. The encoder allows the computer to receive feedback
-from the motor about how fast it's moving, and how much it's moved since it was powered on. I cut
-the 6-pin JST encoder cable that came with the Solo Adapter to half length, and soldered it to the
+and powered the SOLO controller with an oscilloscope power supply. However, I also needed to connect
+the internal encoder to the controller. The encoder allows the computer to receive feedback from the
+motor about how fast it's moving, and how much it's moved since it was powered on. I cut the 6-pin
+JST encoder cable that came with the Solo Adapter to half length, and soldered it to the
 smaller-pitch 6-pin JST cable, using mappings for the cable found on
 [REV's docs](https://docs.revrobotics.com/brushless/spark-max/specs/encoder-port) and the UNO v2
 [user manual](https://solomotorcontrollers.com/wp-content/uploads/materials/SOLO_UNO_v2_SLU0722_5832_UserManual.pdf).
@@ -186,7 +186,8 @@ ROS is not natively supported on any Linux distributions other than Ubuntu. The 
 directly supports its own version of Debian called Raspberry Pi OS, or Raspbian. Although Ubuntu is
 closely related to Debian through its package manager and source tree, the two distributions use
 different package repositories, and for the robot's runtime environment, I wanted the package
-manager system to be as clean as possible, without any hacked-together package manger configuration.
+manager system to be as clean as possible, without any hacked-together package manager
+configuration.
 
 I considered installing Ubuntu on the Raspberry Pi that I mounted onto the robot, however Docker
 seemed like a much better choice. Docker is a background process that runs containerized versions of
@@ -250,7 +251,7 @@ controllers, which use their respective motor to produce torque on that motor's 
 
 After it sends signals to its motors, it then uses the feedback of velocities reported by
 aforementioned motors' encoders to determine the current velocity of each module. The data collected
-on each module is then uses to determine the linear and angular velocity of the entire robot in
+on each module is then used to determine the linear and angular velocity of the entire robot in
 order to inform how it continues to control each module. All of this data is published back to the
 ROS message system for the `robot` and `client` nodes to use.
 
@@ -285,7 +286,8 @@ As the goal of this project was to gain experience with all aspects of robot des
 entire robot chassis from the ground up. In FRC, it is standard practice to buy manufactured swerve
 modules from hardware vendors (i.e. REV, Swerve Drive Specialties), as the drivetrain is not the
 primary hurdle of robot development. However, my focus was primarily on the intricate design process
-of the *entire* robot, including the swerve modules. These were the first step in robot development.
+of the *entire* robot, including the swerve modules. These were the first steps in robot
+development.
 
 #### CAD
 
@@ -334,7 +336,7 @@ create a margin for printing and assembly error.
 Wherever possible, I stuck with metric units and bolt sizes. I had quite a lot of M3 hardware lying
 around, so I used M3 whenever I could. However, I had to make some exceptions. To secure the two
 internal drive gears to their respective shafts, I used an M2 bolt threaded through a nut in a small
-pocket on the internal circumfrence of the gear. M3 screws were too large. In my mount for the
+pocket on the internal circumference of the gear. M3 screws were too large. In my mount for the
 Raspberry Pi, I had to use M2.5 bolts to fit through the RPi's mounting holes. Additionally, all
 FRC-legal parts use #10-32 bolts. In addition to the irritation of using imperial units, I did not
 have any #10-32 hardware in stock.
@@ -499,7 +501,7 @@ between ROS nodes. This allowed me to easily segment the codebase and handle use
 independently of drivetrain math and motor control, among other development niceties.
 
 **Automated build process**. As a result of my cloud-based cross-compilation setup, I was able to
-streamline my workflow to automatically build and deploy my code every time I pushed a Git commit.
+streamline my workflow to automatically build and deploy my code every time I push a Git commit.
 This allowed me to push my code to the robot and check in my current code state in one command in
 Neovim, my code editor of choice.
 
