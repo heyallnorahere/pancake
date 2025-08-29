@@ -56,6 +56,9 @@ namespace pancake::robot {
             std::bind(&Robot::InputReceived, this, std::placeholders::_1));
 
         m_UpdateTimer = create_wall_timer(30ms, std::bind(&Robot::Update, this));
+
+        m_KillPublisher = create_publisher<std_msgs::msg::Bool>("/pancake/robot/kill", 100);
+        m_ReloadPublisher = create_publisher<std_msgs::msg::Bool>("/pancake/robot/reload", 10);
     }
 
     void Robot::InputReceived(const pancake::msg::Input& input) {
@@ -70,10 +73,17 @@ namespace pancake::robot {
     }
 
     void Robot::ProcessInput() {
+        float controllerX = GetInputAxis(pancake::client::GamepadInput::LeftStick, 0);
+        float controllerY = GetInputAxis(pancake::client::GamepadInput::LeftStick, 1);
+        float controllerRightX = GetInputAxis(pancake::client::GamepadInput::RightStick, 0);
+
+        // transforming left stick space (+X right, +Y down) to field space (+X forward, +Y left)
         Vector2 direction;
-        direction.X = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 1);
-        direction.Y = -GetInputAxis(pancake::client::GamepadInput::LeftStick, 0);
-        float angularDirection = -GetInputAxis(pancake::client::GamepadInput::RightStick, 0);
+        direction.X = -controllerY;
+        direction.Y = -controllerX;
+
+        // +X on controller is right, we want that to move clockwise. +theta is ccw
+        float angularDirection = -controllerRightX;
 
         static constexpr float deadzone = 0.05f;
         if (direction.Length() < deadzone) {
@@ -100,7 +110,28 @@ namespace pancake::robot {
         m_RequestPublisher->publish(request);
     }
 
-    void Robot::Update() { UpdateInput(); }
+    void Robot::Update() {
+        UpdateInput();
+
+        static constexpr float killThreshold = 0.8f;
+        float l2 = GetInputAxis(pancake::client::GamepadInput::LeftTrigger, 0);
+        float r2 = GetInputAxis(pancake::client::GamepadInput::RightTrigger, 0);
+
+        if (l2 >= killThreshold && r2 >= killThreshold) {
+            std_msgs::msg::Bool b;
+            b.data = true;
+
+            m_KillPublisher->publish(b);
+        }
+
+        if (IsInputDown(pancake::client::GamepadInput::LeftBumper) &&
+            IsInputDown(pancake::client::GamepadInput::RightBumper)) {
+            std_msgs::msg::Bool b;
+            b.data = true;
+
+            m_ReloadPublisher->publish(b);
+        }
+    }
 
     void Robot::UpdateInput() {
         for (auto& [id, state] : s_Gamepad) {

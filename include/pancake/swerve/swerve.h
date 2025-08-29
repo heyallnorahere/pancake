@@ -52,7 +52,7 @@ namespace pancake::swerve {
 
         std::shared_ptr<Drivetrain> m_Drivetrain;
 
-        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_KillListener;
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_KillListener, m_ReloadListener;
 
         rclcpp::Subscription<pancake::msg::SwerveRequest>::SharedPtr m_RequestSubscriber;
         rclcpp::Subscription<pancake::msg::OdometryState>::SharedPtr m_ResetSubscriber;

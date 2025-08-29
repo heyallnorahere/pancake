@@ -1,6 +1,8 @@
 #pragma once
 #include "pancake/client/client.h"
 
+#include <std_msgs/msg/bool.hpp>
+
 namespace pancake::robot {
     class Robot : public rclcpp::Node {
     public:
@@ -19,12 +21,14 @@ namespace pancake::robot {
 
     private:
         void ProcessInput();
-        
+
         void Update();
         void UpdateInput();
 
         rclcpp::Publisher<pancake::msg::SwerveRequest>::SharedPtr m_RequestPublisher;
         rclcpp::Subscription<pancake::msg::Input>::SharedPtr m_InputSubscriber;
         rclcpp::TimerBase::SharedPtr m_UpdateTimer;
+
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_KillPublisher, m_ReloadPublisher;
     };
 } // namespace pancake::robot

@@ -98,8 +98,6 @@ namespace pancake::client {
         m_Publisher = create_publisher<pancake::msg::Input>("/pancake/client/control", 10);
         m_Timer = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(interval),
                                     std::bind(&Client::Update, this));
-
-        m_SoftwareKill = create_publisher<std_msgs::msg::Bool>("/pancake/client/kill", 10);
     }
 
     Client::~Client() {
@@ -152,31 +150,6 @@ namespace pancake::client {
                 break;
             case SDL_EVENT_GAMEPAD_AXIS_MOTION:
                 SendAxis(event.gaxis);
-                break;
-            }
-        }
-
-        static constexpr float killThreshold = 0.8f;
-        static const std::unordered_set<SDL_GamepadAxis> killAxes = {
-            SDL_GAMEPAD_AXIS_LEFT_TRIGGER, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER
-        };
-
-        for (const auto& [id, gamepad] : m_Gamepads) {
-            size_t axisThresholdCount = 0;
-            for (auto axis : killAxes) {
-                Sint16 value = SDL_GetGamepadAxis(gamepad, axis);
-                float percent = (float)value / std::numeric_limits<Sint16>::max();
-
-                if (percent >= killThreshold) {
-                    axisThresholdCount++;
-                }
-            }
-
-            if (axisThresholdCount == killAxes.size()) {
-                std_msgs::msg::Bool kill;
-                kill.data = true;
-
-                m_SoftwareKill->publish(kill);
                 break;
             }
         }

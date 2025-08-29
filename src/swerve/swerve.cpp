@@ -237,10 +237,19 @@ namespace pancake::swerve {
         m_UpdateTimer = create_wall_timer(20ms, std::bind(&Swerve::Update, this));
 
         m_KillListener = create_subscription<std_msgs::msg::Bool>(
-            "/pancake/client/kill", 10, [](const std_msgs::msg::Bool& kill) {
+            "/pancake/robot/kill", 100, [](const std_msgs::msg::Bool& kill) {
                 if (kill.data) {
                     throw std::runtime_error("Client sent kill command!");
                 }
+            });
+
+        m_ReloadListener = create_subscription<std_msgs::msg::Bool>(
+            "/pancake/robot/reload", 100, [](const std_msgs::msg::Bool& reload) {
+                if (!reload.data) {
+                    return;
+                }
+
+                // guh
             });
     }
 

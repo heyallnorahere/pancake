@@ -59,7 +59,6 @@ namespace pancake::client {
 
         rclcpp::TimerBase::SharedPtr m_Timer;
         rclcpp::Publisher<pancake::msg::Input>::SharedPtr m_Publisher;
-        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_SoftwareKill;
 
         std::unordered_map<std::string, std::shared_ptr<View>> m_Views;
     };
